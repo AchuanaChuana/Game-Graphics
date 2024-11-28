@@ -12,6 +12,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 	DxCore dx;
 	Shaders shader;
 	plane plane;
+	StaticMesh banana;
 	FPCamera camera;
 	GamesEngineeringBase::Timer tim;
 	
@@ -19,6 +20,8 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 	dx.Init(1024, 768, win.hwnd, false);
 	shader.init("Shaderv.txt", "Shaderp.txt", &dx);
 	plane.init(&dx);
+	banana.init(&dx, "Resources/bananaclump.gem");
+
 	float t = 0.f;
 
 	Vec4 eye = Vec4(10.f,10.f,10.f,1.f);
@@ -29,9 +32,6 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 
 	Matrix44 defaultMatrix;
 	Matrix44 scaledmatrix = defaultMatrix.scaling(Vec3(0.1, 0.1, 0.1));
-	/*Matrix44 viewmatrix = camera.getViewMatrix();
-	Matrix44 projectionmatrix = camera.getProjectionMatrix();
-	Matrix44 together = viewmatrix*projectionmatrix  ;*/
 
 	while (true)
 	{
@@ -40,8 +40,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 		camera.setViewMatrix(from, center, up);
 		Matrix44 viewmatrix = camera.getViewMatrix();
 		Matrix44 projectionmatrix = camera.getProjectionMatrix();
-	   Matrix44 together = viewmatrix* projectionmatrix ;
-
+	    Matrix44 together = viewmatrix* projectionmatrix ;
 
 		camera.updateViewMatrix();
 
@@ -51,6 +50,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 		shader.updateConstantVS("staticMeshBuffer", "VP", &together);
 		shader.apply(&dx);
 		plane.draw(&dx);
+		banana.draw(&dx);
 		win.processMessages();
 		dx.present();
 	}
