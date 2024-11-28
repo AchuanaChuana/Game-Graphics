@@ -134,6 +134,7 @@
   <ItemGroup>
     <ClInclude Include="camera.h" />
     <ClInclude Include="dxCore.h" />
+    <ClInclude Include="GamesEngineeringBase.h" />
     <ClInclude Include="mathLibrary.h" />
     <ClInclude Include="Mesh.h" />
     <ClInclude Include="Shader.h" />

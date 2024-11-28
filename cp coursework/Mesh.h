@@ -138,20 +138,6 @@ public:
 
 };
 
-class cube
-{
-public:
-
-	std::vector<STATIC_VERTEX> vertices;
-	Vec3 p0 = Vec3(-1.0f, -1.0f, -1.0f);
-	Vec3 p1 = Vec3(1.0f, -1.0f, -1.0f);
-	Vec3 p2 = Vec3(1.0f, 1.0f, -1.0f);
-	Vec3 p3 = Vec3(-1.0f, 1.0f, -1.0f);
-	Vec3 p4 = Vec3(-1.0f, -1.0f, 1.0f);
-	Vec3 p5 = Vec3(1.0f, -1.0f, 1.0f);
-	Vec3 p6 = Vec3(1.0f, 1.0f, 1.0f);
-	Vec3 p7 = Vec3(-1.0f, 1.0f, 1.0f);
-};
 
 //class Sphere
 //{
