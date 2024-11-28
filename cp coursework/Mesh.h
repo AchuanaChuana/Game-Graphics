@@ -168,7 +168,6 @@ class StaticMesh
 {
 public:
 	Mesh geo;
-	std::vector<Mesh> meshes;
 
 	STATIC_VERTEX addVertex(Vec3 p, Vec3 n,Vec3 t, float tu, float tv)
 	{
@@ -181,48 +180,33 @@ public:
 		return v;
 	}
 
-	// 初始化静态模型，通过文件名加载
 	void init(DxCore* core, const std::string& filename)
 	{
 		GEMLoader::GEMModelLoader modelLoader;
 		std::vector<GEMLoader::GEMMesh> gemmesh;
-
-		for (const auto& mesh : gemmesh)
+		modelLoader.load(filename, gemmesh);
+		std::vector<STATIC_VERTEX> vertices;
+		std::vector<unsigned int> indices;
+	  for (int i = 0; i < gemmesh.size(); i++) 
 		{
-			if (!mesh.isAnimated())
-			{
-				std::vector<STATIC_VERTEX> vertices;
-				std::vector<unsigned int> indices;
-
-				// 遍历顶点索引，生成顶点数据
-				for (const auto& index : mesh.indices)
-				{
-					// 从网格数据中提取顶点信息
-					GEMLoader::GEMVec3 pos = mesh.verticesStatic[index].position;
-					GEMLoader::GEMVec3 normal = mesh.verticesStatic[index].normal;
-					GEMLoader::GEMVec3 tangent = mesh.verticesStatic[index].tangent;
-					float u = mesh.verticesStatic[index].u;
-					float v = mesh.verticesStatic[index].v;
-
-					// 添加顶点到 vertices
-					vertices.push_back(addVertex(
-						Vec3(pos.x, pos.y, pos.z),         
-						Vec3(normal.x, normal.y, normal.z), 
-						Vec3(tangent.x, tangent.y, tangent.z), 
-						u, v));                             
-
-					// 添加索引到 indices
-					indices.push_back(index);
-				}
-
-				// 使用生成的顶点和索引初始化 Mesh
-				geo.init(core, vertices, indices);
-
-			}
+				if (!gemmesh[i].isAnimated())
+			    {
+					for (int j = 0; j < gemmesh[i].indices.size(); j++)
+					{
+						int index = gemmesh[i].indices[j]; 
+						GEMLoader::GEMVec3 pos = gemmesh[i].verticesStatic[index].position;
+						GEMLoader::GEMVec3 normal = gemmesh[i].verticesStatic[index].normal;
+						GEMLoader::GEMVec3 tangent = gemmesh[i].verticesStatic[index].tangent;
+						float u = gemmesh[i].verticesStatic[index].u;
+						float v = gemmesh[i].verticesStatic[index].v;
+						vertices.push_back(addVertex(Vec3(pos.x, pos.y, pos.z), Vec3(normal.x, normal.y, normal.z), Vec3(tangent.x, tangent.y, tangent.z), u, v));
+						indices.push_back(index);
+					}
+			    }
 		}
+		geo.init(core, vertices, indices);
 	}
 
-	// 绘制方法
 	void draw(DxCore* core)
 	{
 		geo.draw(core->devicecontext);
