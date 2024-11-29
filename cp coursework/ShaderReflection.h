@@ -127,32 +127,3 @@ public:
 	}
 };
 
-// How to use
-/*
-Define in shader class:
-
-std::vector<ConstantBuffer> psConstantBuffers;
-std::vector<ConstantBuffer> vsConstantBuffers;
-std::map<std::string, int> textureBindPointsVS;
-std::map<std::string, int> textureBindPointsPS;
-
-
-	void loadPS(Core *core, std::string hlsl)
-	{
-		ID3DBlob* shader;
-		ID3DBlob* status;
-		HRESULT hr = D3DCompile(hlsl.c_str(), strlen(hlsl.c_str()), NULL, NULL, NULL, "PS", "ps_5_0", 0, 0, &shader, &status);
-		if (FAILED(hr))
-		{
-			printf("%s\n", (char*)status->GetBufferPointer());
-			exit(0);
-		}
-		core->device->CreatePixelShader(shader->GetBufferPointer(), shader->GetBufferSize(), NULL, &ps);
-		ConstantBufferReflection reflection;
-		reflection.build(core, shader, psConstantBuffers, textureBindPointsPS, ShaderStage::PixelShader);
-	}
-
-	And repeat for loadVS
-		ConstantBufferReflection reflection;
-		reflection.build(core, shader, vsConstantBuffers, textureBindPointsVS, ShaderStage::VertexShader);
-*/

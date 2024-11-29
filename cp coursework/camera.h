@@ -1,10 +1,12 @@
 ﻿#pragma once
 #include "mathLibrary.h"
+#include "Checkkey.h"
 #include <cmath>
 
 class FPCamera : public Transform
 {
 public:
+    Checkkey check;
     Vec4 position;      // 相机位置
     Vec4 target;        // 目标点（视线指向的方向）
     Vec4 upVector;      // 上方向向量
@@ -17,7 +19,7 @@ public:
     FPCamera()
         : position(Vec4(0.0f, 0.0f, -5.0f, 1.0f)),  // 默认位置
         target(Vec4(0.0f, 0.0f, 0.0f, 1.0f)),      // 默认目标
-        upVector(Vec4(0.0f, 1.0f, 0.0f, 0.0f)),    // 默认上方向
+        upVector(Vec4(0.0f, 1.0f, 0.0f, 1.0f)),    // 默认上方向
         fov(45.0f), aspect(4.0f / 3.0f), nearPlane(0.1f), farPlane(100.0f)
     {
         setProjectionMatrix(fov, aspect, nearPlane, farPlane); // 设置投影矩阵
@@ -45,31 +47,50 @@ public:
     }
 
     // 移动函数
-    void moveForward(float amount)
+    void moveForward(float speed,float dt)
     {
-        Vec4 forward = Normalize(target - position);
-        position = position + forward * amount;
-        target = target + forward * amount;
+        Vec4 forward = NormalizenoW(MinusnoW(target, position));
+        if (check.keyPressed('W'))
+        { 
+            position = AddnoW(position,forward * speed * dt);
+            target = AddnoW(target,forward * speed * dt);
+             updateViewMatrix();
+        }
+    }
+
+    void moveBackward(float speed, float dt)
+    {
+        Vec4 forward =NormalizenoW(MinusnoW(target, position));
+        if (check.keyPressed('S'))
+        { 
+            position = MinusnoW(position, forward * speed * dt);
+            target = MinusnoW(target, forward * speed * dt);
+            updateViewMatrix();
+        }
+    }
+
+    void moveRight(float speed,float dt)
+    {
+        Vec4 forward = NormalizenoW( MinusnoW(target, position));
+        Vec4 right = NormalizenoW(Cross(forward, upVector)); 
+        if (check.keyPressed('D'))
+        { 
+        position = AddnoW( position,right * speed*dt);
+        target = AddnoW(target , right * speed*dt);
         updateViewMatrix();
+        }
     }
 
-    void moveBackward(float amount)
+    void moveLeft(float speed, float dt)
     {
-        moveForward(-amount);
-    }
-
-    void moveRight(float amount)
-    {
-        Vec4 forward = Normalize(target - position);
-        Vec4 right = Normalize(Cross(forward, upVector)); // 右方向
-        position = position + right * amount;
-        target = target + right * amount;
-        updateViewMatrix();
-    }
-
-    void moveLeft(float amount)
-    {
-        moveRight(-amount);
+        Vec4 forward = NormalizenoW(MinusnoW(target, position));
+        Vec4 right = NormalizenoW(Cross(forward, upVector));
+        if (check.keyPressed('A'))
+        {
+            position = MinusnoW(position, right * speed * dt);
+            target = MinusnoW(target, right * speed * dt);
+            updateViewMatrix();
+        }
     }
 
     void moveUp(float amount)

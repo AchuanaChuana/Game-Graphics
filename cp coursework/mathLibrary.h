@@ -429,6 +429,12 @@ public:
 		return sqrtf(v[0] * v[0] + v[1] * v[1] + v[2] * v[2] + v[3] * v[3]);
 	}
 
+	float LengthnoW() const 
+	{
+		return sqrtf(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
+	}
+
+
 	float lengthSquare()
 	{
 		return SQ(v[0]) + SQ(v[1]) + SQ(v[2]) + SQ(v[3]);
@@ -438,6 +444,12 @@ public:
 	{
 		float len = 1.0f / sqrtf(v[0] * v[0] + v[1] * v[1] + v[2] * v[2] + v[3] * v[3]);
 		return Vec4(x * len, y * len, z * len, w * len);
+	}
+
+	Vec4 normalizenoW()
+	{
+		float len = 1.0f / sqrtf(v[0] * v[0] + v[1] * v[1] + v[2] * v[2] + v[3] * v[3]);
+		return Vec4(x * len, y * len, z * len, 1.0f);
 	}
 
 	float normalize_GetLength()
@@ -494,6 +506,16 @@ float Dot(const Vec3& v1, const Vec3& v2)
 float Dot(const Vec4& v1, const Vec4& v2)
 {
 	return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z + v1.w * v2.w;
+}
+
+Vec4 AddnoW(const Vec4& v1, const Vec4& v2)
+{
+	return Vec4(v1.x + v2.x, v1.y + v2.y, v1.z + v2.z, 1.0f);
+}
+
+Vec4 MinusnoW(const Vec4& v1, const Vec4& v2)
+{
+	return Vec4(v1.x - v2.x, v1.y - v2.y, v1.z - v2.z, 1.0f);
 }
 
 float Cross(const Vec2& v1, const Vec2& v2)
@@ -559,11 +581,23 @@ Vec4 Normalize(const Vec4& v)
 	float len = sqrtf(v.v[0] * v.v[0] + v.v[1] * v.v[1] + v.v[2] * v.v[2] + v.v[3] * v.v[3]);
 	if (len > 0.0f)
 	{
-		len = 1.0f / len; // ????????
+		len = 1.0f / len; 
 		return Vec4(v.v[0] * len, v.v[1] * len, v.v[2] * len, v.v[3] * len);
 	}
-	return Vec4(0.0f, 0.0f, 0.0f, 0.0f); // ??????????
+	return Vec4(0.0f, 0.0f, 0.0f, 0.0f);
 }
+
+Vec4 NormalizenoW(const Vec4& v)
+{
+	float len = sqrtf(v.v[0] * v.v[0] + v.v[1] * v.v[1] + v.v[2] * v.v[2]);
+	if (len > 0.0f)
+	{
+		len = 1.0f / len;
+		return Vec4(v.v[0] * len, v.v[1] * len, v.v[2] * len, v.w);
+	}
+	return Vec4(0.0f, 0.0f, 0.0f, 0.0f);
+}
+
 
 class Matrix33
 {
