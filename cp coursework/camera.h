@@ -7,49 +7,76 @@ class FPCamera : public Transform
 {
 public:
     Checkkey check;
-    Vec4 position;      // 相机位置
-    Vec4 target;        // 目标点（视线指向的方向）
-    Vec4 upVector;      // 上方向向量
-    float fov;          // 视场角（Field of View）
-    float aspect;       // 屏幕宽高比
-    float nearPlane;    // 近平面
-    float farPlane;     // 远平面
+    Vec4 position;    
+    Vec4 target;      
+    Vec4 upVector;    
+    float fov;       
+    float aspect;      
+    float nearPlane;   
+    float farPlane;   
+    float pitch=0.0f;
+    float yaw=90.0f;
 
-    // 构造函数
     FPCamera()
-        : position(Vec4(0.0f, 0.0f, -5.0f, 1.0f)),  // 默认位置
-        target(Vec4(0.0f, 0.0f, 0.0f, 1.0f)),      // 默认目标
-        upVector(Vec4(0.0f, 1.0f, 0.0f, 1.0f)),    // 默认上方向
+        : position(Vec4(0.0f, 0.0f, -5.0f, 1.0f)),
+        target(Vec4(0.0f, 0.0f, 0.0f, 1.0f)),     
+        upVector(Vec4(0.0f, 1.0f, 0.0f, 1.0f)),   
         fov(45.0f), aspect(4.0f / 3.0f), nearPlane(0.1f), farPlane(100.0f)
     {
-        setProjectionMatrix(fov, aspect, nearPlane, farPlane); // 设置投影矩阵
-        setViewMatrix(position, target, upVector);           // 设置视图矩阵
+        setProjectionMatrix(fov, aspect, nearPlane, farPlane); 
+        setViewMatrix(position, target, upVector);          
     }
 
-    // 设置相机的位置
     void setPosition(const Vec4& newPosition)
     {
         position = newPosition;
-        setViewMatrix(position, target, upVector); // 更新视图矩阵
+        setViewMatrix(position, target, upVector); 
     }
 
-    // 设置相机的目标（方向）
     void setTarget(const Vec4& newTarget)
     {
         target = newTarget;
-        setViewMatrix(position, target, upVector); // 更新视图矩阵
+        setViewMatrix(position, target, upVector); 
     }
 
-    // 更新视图矩阵
+    void setProjection(float newFov, float newAspect, float newNear, float newFar)
+    {
+        fov = newFov;
+        aspect = newAspect;
+        nearPlane = newNear;
+        farPlane = newFar;
+        setProjectionMatrix(fov, aspect, nearPlane, farPlane);
+    }
+
     void updateViewMatrix()
     {
         setViewMatrix(position, target, upVector);
     }
 
-    // 移动函数
+    const Matrix44& getViewMatrix() const
+    {
+        return viewMatrix;
+    }
+
+    const Matrix44& getProjectionMatrix() const
+    {
+        return projectionMatrix;
+    }
+
+    void setViewMatrix(const Vec4& eye, const Vec4& center, const Vec4& up)
+    {
+        viewMatrix = Matrix44::worldtoCam(eye, center, up);
+    }
+
+    void setProjectionMatrix(float fov, float aspect, float nearP, float farP)
+    {
+        projectionMatrix = Matrix44::camtoScreen(fov, aspect, nearP, farP);
+    }
+
     void moveForward(float speed,float dt)
     {
         Vec4 forward = NormalizenoW(MinusnoW(target, position));
+
         if (check.keyPressed('W'))
         { 
             position = AddnoW(position,forward * speed * dt);
@@ -61,6 +88,7 @@ public:
     void moveBackward(float speed, float dt)
     {
         Vec4 forward =NormalizenoW(MinusnoW(target, position));
+
         if (check.keyPressed('S'))
         { 
             position = MinusnoW(position, forward * speed * dt);
@@ -73,6 +101,7 @@ public:
     {
         Vec4 forward = NormalizenoW( MinusnoW(target, position));
         Vec4 right = NormalizenoW(Cross(forward, upVector)); 
+
         if (check.keyPressed('D'))
         { 
         position = AddnoW( position,right * speed*dt);
@@ -85,6 +114,7 @@ public:
     {
         Vec4 forward = NormalizenoW(MinusnoW(target, position));
         Vec4 right = NormalizenoW(Cross(forward, upVector));
+
         if (check.keyPressed('A'))
         {
             position = MinusnoW(position, right * speed * dt);
@@ -93,73 +123,44 @@ public:
         }
     }
 
-    void moveUp(float amount)
+    void processMouseInput(float mouseX, float mouseY, float sensitivity, float dt)
     {
-        position = position + upVector * amount;
-        target = target + upVector * amount;
+        float deltaX = mouseX * sensitivity* dt;
+        float deltaY = mouseY * sensitivity* dt;
+
+        yaw += deltaX;
+        pitch -= deltaY;
+
+        if (pitch > 40.0f) pitch = 40.0f;
+        if (pitch < -40.0f) pitch = -40.0f;
+
+    }
+
+    void updateCameraDirection()
+    {
+        float radPitch = pitch * (3.14159265f / 180.0f);
+        float radYaw = yaw * (3.14159265f / 180.0f);
+
+        Vec4 direction;
+        direction.x = cosf(radYaw) * cosf(radPitch);
+        direction.y = sinf(radPitch);
+        direction.z = sinf(radYaw) * cosf(radPitch);
+        direction.w = 0.0f;
+        Vec4 positionS = Vec4(position.x - 100, position.y, position.z - 100, position.w);
+        target = AddnoW(position, NormalizenoW(direction));
         updateViewMatrix();
     }
 
-    void moveDown(float amount)
-    {
-        moveUp(-amount);
-    }
+    //void moveUp(float amount)
+//{
+//    position = position + upVector * amount;
+//    target = target + upVector * amount;
+//    updateViewMatrix();
+//}
 
-    // 旋转函数
-    void rotate(float angleX, float angleY)
-    {
-        // 绕 Y 轴旋转（左右）
-        float radY = angleY * (3.14159f / 180.0f);
-        Vec4 direction = position - target;
+//void moveDown(float amount)
+//{
+//    moveUp(-amount);
+//}
 
-        float sinY = sin(radY);
-        float cosY = cos(radY);
-        float newX = direction.x * cosY - direction.z * sinY;
-        float newZ = direction.x * sinY + direction.z * cosY;
-        direction.x = newX;
-        direction.z = newZ;
-
-        // 绕 X 轴旋转（上下）
-        float radX = angleX * (3.14159f / 180.0f);
-        float sinX = sin(radX);
-        float cosX = cos(radX);
-        float newY = direction.y * cosX - direction.z * sinX;
-        direction.y = newY;
-
-        target = position + direction; // 更新目标位置
-        updateViewMatrix();
-    }
-
-    // 设置投影矩阵
-    void setProjection(float newFov, float newAspect, float newNear, float newFar)
-    {
-        fov = newFov;
-        aspect = newAspect;
-        nearPlane = newNear;
-        farPlane = newFar;
-        setProjectionMatrix(fov, aspect, nearPlane, farPlane);
-    }
-
-    // 获取视图矩阵
-    const Matrix44& getViewMatrix() const
-    {
-        return viewMatrix;
-    }
-
-    // 获取投影矩阵
-    const Matrix44& getProjectionMatrix() const
-    {
-        return projectionMatrix;
-    }
-
-    void setViewMatrix(const Vec4& eye, const Vec4& center, const Vec4& up)
-    {
-        viewMatrix = Matrix44::worldtoCam(eye, center, up);
-    }
-
-    // 设置投影矩阵的具体实现
-    void setProjectionMatrix(float fov, float aspect, float nearP, float farP)
-    {
-        projectionMatrix = Matrix44::camtoScreen(fov, aspect, nearP, farP);
-    }
 };

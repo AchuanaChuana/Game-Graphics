@@ -16,6 +16,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 	StaticMesh banana;
 	FPCamera camera;
 	Checkkey check;
+	Checkmouse checkMouse(win.hwnd);
 	GamesEngineeringBase::Timer tim;
 	
 	win.Init(1024, 768, "MyWindow");
@@ -27,8 +28,8 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 	float t = 0.f;
 	
 
-	Vec4 eye = Vec4(1100.f,500.f,1100.f,1.f);
-	Vec4 center = Vec4(0.f, 0.f, 0.f, 1.f);
+	Vec4 eye = Vec4(500.f, 80.f,500.f,1.f);
+	Vec4 center = Vec4(0.f, 80.f, 0.f, 1.f);
 	Vec4 up = Vec4(0.f, 1.f, 0.f, 1.f);
 
 	camera.setPosition(eye);
@@ -39,14 +40,20 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 	Matrix44 defaultMatrix;
 	Matrix44 scaledmatrix = defaultMatrix.scaling(Vec3(0.1, 0.1, 0.1));
 
+	
+
 	while (true)
 	{
 		win.processMessages();
 		//t += tim.dt();
 		//Vec4 from = Vec4(1100 * cosf(t), 500, 1100 * sinf(t),1);
 		float dt = tim.dt();
-		
-		camera.moveForward(700.f, dt);
+		float mouseX, mouseY;
+		checkMouse.getMouseMovement(mouseX, mouseY);
+		camera.processMouseInput(mouseX, mouseY, 400.f, dt);
+
+		camera.updateCameraDirection();
+		camera.moveForward(700.f, dt); 
 		camera.moveBackward(500.f, dt);
 		camera.moveRight(500.f, dt);
 		camera.moveLeft(500.f, dt);
@@ -62,6 +69,9 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 		shader.apply(&dx);
 		plane.draw(&dx);
 		banana.draw(&dx);
+
+		if (check.keyPressed(VK_ESCAPE))  break;  
+
 
 		dx.present();
 	}
