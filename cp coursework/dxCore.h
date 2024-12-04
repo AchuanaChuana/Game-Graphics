@@ -38,8 +38,8 @@ void Init(int width , int height, HWND hwnd, bool window_fullscreen)
 	   D3D_FEATURE_LEVEL fl;
 	   fl = D3D_FEATURE_LEVEL_11_0;
 
-	   Adaptor a;
-	   a.findAdaptor();
+	   Adapter a;
+	   a.findAdapter();
 
 	   D3D11CreateDeviceAndSwapChain(a.adapter,
 		   D3D_DRIVER_TYPE_UNKNOWN,

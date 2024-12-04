@@ -434,7 +434,6 @@ public:
 		return sqrtf(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
 	}
 
-
 	float lengthSquare()
 	{
 		return SQ(v[0]) + SQ(v[1]) + SQ(v[2]) + SQ(v[3]);
@@ -497,6 +496,199 @@ public:
 	}
 
 };
+
+class Quaternion
+{
+public:
+	union
+	{
+		float q[4];
+		struct { float x, y, z, w; };
+	};
+
+	Quaternion() : x(0), y(0), z(0), w(1) {}
+
+	Quaternion(float _x, float _y, float _z, float _w)
+	{
+		x = _x;
+		y = _y;
+		z = _z;
+		w = _w;
+	}
+
+	Quaternion operator+(const Quaternion& p) const
+	{
+		return Quaternion(x + p.x, y + p.y, z + p.z, w + p.w);
+	}
+
+	Quaternion operator-(const Quaternion& p) const
+	{
+		return Quaternion(x - p.x, y - p.y, z - p.z, w - p.w);
+	}
+
+	Quaternion operator*(const Quaternion& p) const
+	{
+		return Quaternion(
+			w * p.x + x * p.w + y * p.z - z * p.y,
+			w * p.y - x * p.z + y * p.w + z * p.x,
+			w * p.z + x * p.y - y * p.x + z * p.w,
+			w * p.w - x * p.x - y * p.y - z * p.z
+		);
+	}
+
+	Quaternion operator*(float scalar) const
+	{
+		return Quaternion(x * scalar, y * scalar, z * scalar, w * scalar);
+	}
+
+	Quaternion& operator*=(const Quaternion& p)
+	{
+		*this = *this * p;
+		return *this;
+	}
+
+	Quaternion& operator*=(float scalar)
+	{
+		x *= scalar; y *= scalar; z *= scalar; w *= scalar;
+		return *this;
+	}
+
+	float length() const
+	{
+		return sqrtf(x * x + y * y + z * z + w * w);
+	}
+
+	Quaternion normalize() const
+	{
+		float len = length();
+		if (len == 0)
+			return Quaternion(0, 0, 0, 1);
+		float invLen = 1.0f / len;
+		return *this * invLen;
+	}
+
+	Quaternion conjugate() const
+	{
+		return Quaternion(-x, -y, -z, w);
+	}
+
+	Quaternion inverse() const
+	{
+		float lenSquared = x * x + y * y + z * z + w * w;
+		if (lenSquared == 0)
+			return Quaternion(0, 0, 0, 1);
+		float invLenSquared = 1.0f / lenSquared;
+		return conjugate() * invLenSquared;
+	}
+
+	float dot(const Quaternion& p) const
+	{
+		return x * p.x + y * p.y + z * p.z + w * p.w;
+	}
+
+	Vec3 rotate(const Vec3& v) const
+	{
+		Quaternion vecQuat(v.x, v.y, v.z, 0);
+		Quaternion result = (*this) * vecQuat * this->inverse();
+		return Vec3(result.x, result.y, result.z);
+	}
+
+	bool operator==(const Quaternion& p) const
+	{
+		return (x == p.x && y == p.y && z == p.z && w == p.w);
+	}
+
+	bool operator!=(const Quaternion& p) const
+	{
+		return !(*this == p);
+	}
+
+	Quaternion slerp(const Quaternion& q1, const Quaternion& q2, float t)
+	{
+		// Clamp t to the range [0, 1]
+		if (t < 0.0f) t = 0.0f;
+		if (t > 1.0f) t = 1.0f;
+
+		// Compute the dot product (cosine of the angle between quaternions)
+		float dot = q1.dot(q2);
+
+		// If the dot product is negative, reverse one quaternion to take the shorter arc
+		Quaternion q2Modified = q2;
+		if (dot < 0.0f)
+		{
+			dot = -dot;
+			q2Modified = Quaternion(-q2.x, -q2.y, -q2.z, -q2.w);
+		}
+
+		// If the quaternions are close, use linear interpolation to avoid precision issues
+		const float EPSILON = 1e-6f;
+		if (dot > 1.0f - EPSILON)
+		{
+			return Quaternion(
+				q1.x + t * (q2Modified.x - q1.x),
+				q1.y + t * (q2Modified.y - q1.y),
+				q1.z + t * (q2Modified.z - q1.z),
+				q1.w + t * (q2Modified.w - q1.w)
+			).normalize();
+		}
+
+		// Compute the angle between the quaternions
+		float theta0 = acosf(dot);         // Angle between q1 and q2
+		float theta = theta0 * t;          // Interpolated angle
+
+		// Compute the sin values
+		float sinTheta0 = sinf(theta0);    // sin(theta0)
+		float sinTheta = sinf(theta);      // sin(theta)
+
+		// Calculate the scale factors
+		float s1 = cosf(theta) - dot * sinTheta / sinTheta0;  // Scale for q1
+		float s2 = sinTheta / sinTheta0;                     // Scale for q2
+
+		// Interpolate and normalize the result
+		return Quaternion(
+			s1 * q1.x + s2 * q2Modified.x,
+			s1 * q1.y + s2 * q2Modified.y,
+			s1 * q1.z + s2 * q2Modified.z,
+			s1 * q1.w + s2 * q2Modified.w
+		).normalize();
+	}
+
+	Matrix44 toMatrix() const
+	{
+		Matrix44 matrix;
+
+		float xx = x * x;
+		float yy = y * y;
+		float zz = z * z;
+		float xy = x * y;
+		float xz = x * z;
+		float yz = y * z;
+		float wx = w * x;
+		float wy = w * y;
+		float wz = w * z;
+
+		// Fill in the rotation matrix elements
+		matrix.m[0] = 1.0f - 2.0f * (yy + zz);
+		matrix.m[1] = 2.0f * (xy - wz);
+		matrix.m[2] = 2.0f * (xz + wy);
+		matrix.m[3] = 0.0;
+		matrix.m[4] = 2.0f * (xy + wz);
+		matrix.m[5] = 1.0f - 2.0f * (xx + zz);
+		matrix.m[6] = 2.0f * (yz - wx);
+		matrix.m[7] = 0.0;
+		matrix.m[8] = 2.0f * (xz - wy);
+		matrix.m[9] = 2.0f * (yz + wx);
+		matrix.m[10] = 1.0f - 2.0f * (xx + yy);
+		matrix.m[11] = 0.0;
+		matrix.m[12] = 0;
+		matrix.m[13] = 0;
+		matrix.m[14] = 0;
+		matrix.m[15] = 1;
+		return matrix;
+	}
+
+};
+
 
 float Dot(const Vec3& v1, const Vec3& v2)
 {
@@ -597,7 +789,6 @@ Vec4 NormalizenoW(const Vec4& v)
 	}
 	return Vec4(0.0f, 0.0f, 0.0f, 0.0f);
 }
-
 
 class Matrix33
 {

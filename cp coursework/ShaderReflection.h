@@ -35,6 +35,7 @@ public:
 	unsigned int cbSizeInBytes;
 	int dirty;
 	int index;
+	float time;
 	ShaderStage shaderStage;
 	void init(DxCore* core, unsigned int sizeInBytes, int constantBufferIndex, ShaderStage _shaderStage)
 	{

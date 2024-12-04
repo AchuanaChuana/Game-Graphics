@@ -151,6 +151,8 @@ public:
         updateViewMatrix();
     }
 
+  
+
     //void moveUp(float amount)
 //{
 //    position = position + upVector * amount;
@@ -162,5 +164,32 @@ public:
 //{
 //    moveUp(-amount);
 //}
+
+};
+
+class FPcamManager
+{
+public:
+    FPCamera camera;
+
+    void setAll( Vec4 eye, Vec4 center, Vec4 up, float fov, float aspectRatio, float nearPlane, float farPlane)
+    {
+        camera.setPosition(eye);
+        camera.setTarget(center);
+        camera.setViewMatrix(eye, center, up);
+        camera.setProjectionMatrix(fov, aspectRatio, nearPlane, farPlane);
+    }
+
+    void cameraMovement(Checkmouse& checkMouse, float sensitivity, float dt)
+    {
+        float mouseX, mouseY;
+        checkMouse.getMouseMovement(mouseX, mouseY);
+        camera.processMouseInput(mouseX, mouseY, sensitivity, dt);
+        camera.updateCameraDirection();
+        camera.moveForward(700.f, dt);
+        camera.moveBackward(500.f, dt);
+        camera.moveRight(500.f, dt);
+        camera.moveLeft(500.f, dt);
+    }
 
 };

@@ -10,7 +10,8 @@ public:
 	}
 };
 
-class Checkmouse {
+class Checkmouse
+{
 public:
     POINT lastCursorPos; 
     HWND hwnd;          

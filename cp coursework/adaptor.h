@@ -12,13 +12,13 @@
 //	_declspec(dllexport) DWORD NvOptimusEnablement = 0x00000001;
 //}
 
-class Adaptor
+class Adapter
 {
-  public:
+public:
 	IDXGIAdapter1* adapter;
-
-	void findAdaptor()
+	void findAdapter() 
 	{
+
 		IDXGIAdapter1* adapterf;
 		std::vector<IDXGIAdapter1*> adapters;
 		IDXGIFactory6* factory = NULL;
@@ -29,7 +29,6 @@ class Adaptor
 			adapters.push_back(adapterf);
 			i++;
 		}
-
 		long long maxVideoMemory = 0;
 		int useAdapterIndex = 0;
 		for (int i = 0; i < adapters.size(); i++)
@@ -45,7 +44,7 @@ class Adaptor
 		adapter = adapters[useAdapterIndex];
 		factory->Release();
 	}
-
-
-
+	IDXGIAdapter1* getAdapter() const {
+		return adapter;
+	}
 };
