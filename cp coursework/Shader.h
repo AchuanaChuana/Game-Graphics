@@ -143,11 +143,6 @@ public:
 		reflection.build(core, shader, psConstantBuffers, textureBindPointsPS, ShaderStage::PixelShader);
 	}
 
-	void updateTexturePS(DxCore* core, std::string name, ID3D11ShaderResourceView* srv)
-	{
-		core->devicecontext->PSSetShaderResources(textureBindPointsPS[name], 1, &srv);
-	}
-
 	void apply(DxCore* core)
 	{
 		if (hasLayout == 1)
@@ -195,6 +190,10 @@ public:
 		updateConstant(constantBufferName, variableName, data, psConstantBuffers);
 	}
 
+	void updateTexturePS(DxCore* core, std::string name, ID3D11ShaderResourceView* srv)
+	{
+		core->devicecontext->PSSetShaderResources(textureBindPointsPS[name], 1, &srv);
+	}
 };
 
 //class shaderManager

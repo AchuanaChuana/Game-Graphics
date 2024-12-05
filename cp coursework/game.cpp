@@ -18,6 +18,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 	planewithTex plane;
 	staticMesh banana;
 	staticMesh pine;
+	Sphere dome;
 	animatedMesh gun;
 	animatedMesh dinasour;
 	FPCamera camera;
@@ -25,7 +26,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 	Checkkey check;
 	textureManager texman;
 	Matrix44 defaultMatrix;
-	Matrix44 biggerDefault = defaultMatrix.scaling(Vec3(4, 4, 4));
+	Matrix44 biggerDefault = defaultMatrix.scaling(Vec3(100, 100, 100));
 	Checkmouse checkMouse(win.hwnd);
 	GamesEngineeringBase::Timer tim;
 
@@ -35,15 +36,16 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 	//shader.init("Shaderv.txt", "Shaderp.txt", &dx);
 	shaderop.initStatic("Shaderv.txt", "Shaderpop.txt", &dx);
 	shaderS.initStatic("Shaderv.txt", "Shaderp2.txt", &dx);
-	shaderA.initAnimated("Shaderv.txt", "Shaderp2.txt", &dx);
+	shaderA.initAnimated("Shadervmove.txt", "Shaderp2.txt", &dx);
 	shadernoTex.initStatic("Shaderv.txt", "Shaderp.txt", &dx);
 	//shadertile.initStatic("Shaderv.txt", "Shaderptile.txt", &dx);
 
-	plane.init(&dx,&texman, std::string("Textures/grass.png"));
+	plane.init(&dx,&texman, std::string("Textures/snowbc.png"));
 	banana.loadMesh(&dx, "Resources/bananaclump.gem", &texman);
 	pine.loadMesh(&dx, "Resources/pine.gem",&texman);
 	dinasour.loadMesh(&dx, "Resources/TRex.gem", &texman);
 	gun.loadMesh(&dx, "Resources/Automatic_Carbine_5.gem", &texman);
+	dome.init(&dx, &texman, std::string("Textures/HDRI/cloudyblue.png"), 30, 30, 4000);
 
 	float t = 0.f;
 	
@@ -55,7 +57,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 	camera.setPosition(eye);
 	camera.setTarget(center);
 	camera.setViewMatrix(eye, center, up);
-	camera.setProjectionMatrix(45, 1024.f / 768.f, 0.1, 5000);
+	camera.setProjectionMatrix(45, 1024.f / 768.f, 0.1, 8000);
 
 	while (true)
 	{
@@ -78,13 +80,14 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 
 		dx.clear(); 
 	
-		plane.draw(&dx, &shaderS,texman, defaultMatrix, together);
+		plane.draw(&dx, &shaderS,texman, "Textures/snowbc.png", defaultMatrix, together);
 		banana.draw(&dx, &shaderS,texman, defaultMatrix, together);
 		pine.draw(&dx, &shaderop,texman, defaultMatrix, together);
-		//gun.draw(&shaderA, &dx, dt, texman, defaultMatrix, together);
-		gun.t += dt;
-		dinasour.draw(&shaderA, &dx, dt, texman, defaultMatrix, together);
+		/*gun.draw(&shaderA, &dx, dt, texman, defaultMatrix, together);
+		gun.t += dt;*/
+		dinasour.draw(&shaderA, &dx, dt, texman, biggerDefault, together);
 		dinasour.t += dt;
+		dome.draw(&dx, &shaderS, texman,"Textures/HDRI/cloudyblue.png", defaultMatrix, together);
 
 		if (check.keyPressed(VK_ESCAPE))  break;  
 		dx.present();

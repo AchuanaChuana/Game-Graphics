@@ -184,7 +184,6 @@ class planewithTex
 public:
 	Mesh mesh;
 	std::string materialFilename;
-	Texture* materialTexture;     
 
 	STATIC_VERTEX addVertex(Vec3 p, Vec3 n, float tu, float tv)
 	{
@@ -201,10 +200,10 @@ public:
 	{
 		materialFilename = materialPath;
 		std::vector<STATIC_VERTEX> vertices;
-		vertices.push_back(addVertex(Vec3(-100, 0, -100), Vec3(0, 1, 0), 0, 0));
-		vertices.push_back(addVertex(Vec3(100, 0, -100), Vec3(0, 1, 0), 1, 0));
-		vertices.push_back(addVertex(Vec3(-100, 0, 100), Vec3(0, 1, 0), 0, 1));
-		vertices.push_back(addVertex(Vec3(100, 0, 100), Vec3(0, 1, 0), 1, 1));
+		vertices.push_back(addVertex(Vec3(-5000, 0, -5000), Vec3(0, 1, 0), 0, 0));
+		vertices.push_back(addVertex(Vec3(5000, 0, -5000), Vec3(0, 1, 0), 1, 0));
+		vertices.push_back(addVertex(Vec3(-5000, 0, 5000), Vec3(0, 1, 0), 0, 1));
+		vertices.push_back(addVertex(Vec3(5000, 0, 5000), Vec3(0, 1, 0), 1, 1));
 		std::vector<unsigned int> indices;
 		indices.push_back(2); indices.push_back(1); indices.push_back(0);
 		indices.push_back(1); indices.push_back(2); indices.push_back(3);
@@ -212,43 +211,77 @@ public:
 		textures->load(core, materialFilename);
 	}
 
-	void draw(DxCore* core, Shaders* shader, textureManager textures, /*float tilingX, float tilingY, */Matrix44 Worldpos, Matrix44 Transform)
+	void draw(DxCore* core, Shaders* shader, textureManager textures, std:: string filename,/*float tilingX, float tilingY, */Matrix44 Worldpos, Matrix44 Transform)
 	{
 		shader->updateConstantVS("staticMeshBuffer", "W", &Worldpos);
 		shader->updateConstantVS("staticMeshBuffer", "VP", &Transform);
 		//textures.bindTexture(core, shader, "Textures/grass.png", tilingX, tilingY);
 		shader->apply(core);
-		shader->updateTexturePS(core, "tex", textures.find("Textures/grass.png"));
+		shader->updateTexturePS(core, "tex", textures.find(filename));
 		//ID3D11ShaderResourceView* normalMap = textures.find("Textures/grass_normal.png");
 	
 		mesh.draw(core);
 	}
 };
 
-//class Sphere
-//{
-//public:
-//
-//void init(int rings, int segments, float radius)
-//{
-//	for (int lat = 0; lat <= rings; lat++) {
-//		float theta = lat * PI / rings;
-//		float sinTheta = sinf(theta);
-//		float cosTheta = cosf(theta);
-//		for (int lon = 0; lon <= segments; lon++) {
-//			float phi = lon * 2.0f * PI / segments;
-//			float sinPhi = sinf(phi);
-//			float cosPhi = cosf(phi);
-//			Vec3 position(radius * sinTheta * cosPhi, radius * cosTheta, radius * sinTheta * sinPhi);
-//			Vec3 normal = position.Normalize();
-//			float tu = 1.0f - (float)lon / segments;
-//			float tv = 1.0f - (float)lat / rings;
-//			vertices.push_back(addVertex(position, normal, tu, tv));
-//		}
-//	}
-//
-//}
-//};
+class Sphere
+{
+public:
+	Mesh sph;
+	std::string materialFilename;
+
+	STATIC_VERTEX addVertex(Vec3 p, Vec3 n, float tu, float tv)
+	{
+		STATIC_VERTEX v;
+		v.pos = p;
+		v.normal = n;
+		v.tangent = Vec3(0, 0, 0); // For now
+		v.tu = tu;
+		v.tv = tv;
+		return v;
+	}
+
+void init(DxCore* core, textureManager* textures, const std::string& materialPath,int rings, int segments, float radius)
+{
+	materialFilename = materialPath;
+	std::vector<STATIC_VERTEX> vertices;
+	std::vector<unsigned int> indices;
+	for (int lat = 0; lat <= rings; lat++) {
+		float theta = lat * PI / rings;
+		float sinTheta = sinf(theta);
+		float cosTheta = cosf(theta);
+		for (int lon = 0; lon <= segments; lon++) {
+			float phi = lon * 2.0f * PI / segments;
+			float sinPhi = sinf(phi);
+			float cosPhi = cosf(phi);
+			Vec3 position(radius * sinTheta * cosPhi, radius * cosTheta, radius * sinTheta * sinPhi);
+			Vec3 normal = position.Normalize();
+			float tu = 1.0f - (float)lon / segments;
+			float tv = 1.0f - (float)lat / rings;
+			vertices.push_back(addVertex(position, normal, tu, tv));
+			int current = lat * (segments + 1) + lon;
+			int next = current + segments + 1;
+			indices.push_back(current);
+			indices.push_back(next);
+			indices.push_back(current + 1);
+			indices.push_back(current + 1);
+			indices.push_back(next);
+			indices.push_back(next + 1);
+		}
+	}
+	sph.init(core,vertices, indices);
+	textures->load(core, materialFilename);
+}
+
+void draw(DxCore* core,Shaders* shader, textureManager textures, std::string filename,Matrix44 Worldpos, Matrix44 Transform)
+{
+	shader->updateConstantVS("staticMeshBuffer", "W", &Worldpos);
+	shader->updateConstantVS("staticMeshBuffer", "VP", &Transform);
+	shader->apply(core);
+	shader->updateTexturePS(core, "tex", textures.find(filename));
+	sph.draw(core);
+}
+};
 
 class staticMesh
 {
@@ -291,54 +324,55 @@ public:
 	}
 };
 
-// stores animation data for one animation
 class AnimationSequence
 {
+	// stores animation data for one animation
 public:
-	std::vector<AnimationFrame> frames;
-	float ticksPerSecond;
-	Vec3 interpolate(Vec3 p1, Vec3 p2, float t)
-	{
-		return ((p1 * (1.0f - t)) + (p2 * t));
+	std::vector<AnimationFrame> frames; // transformation data for bones
+	float ticksPerSecond; // speed of animation
+
+	Vec3 interpolate(Vec3 p1, Vec3 p2, float t) {
+		return ((p1 * (1.0f - t)) + (p2 * t)); // linear interpolation
 	}
-	Quaternion interpolate(Quaternion q1, Quaternion q2, float t)
-	{
-		Quaternion q;
-		return q.slerp(q1, q2, t);
+	Quaternion interpolate(Quaternion q1, Quaternion q2, float t) {
+		return Quaternion::slerp(q1, q2, t); // ensure smooth rotation
 	}
-	float duration() 
-	{
-		return ((float)frames.size() / ticksPerSecond);
+	float duration() {
+		return ((float)frames.size() / ticksPerSecond);// total duration of animation sequence
 	}
 
-	//Find frame given time
 	void calcFrame(float t, int& frame, float& interpolationFact)
 	{
+		// find frame given time
 		interpolationFact = t * ticksPerSecond;
 		frame = (int)floorf(interpolationFact);
-		interpolationFact = interpolationFact - (float)frame;
+		interpolationFact = interpolationFact - (float)frame; // fractional part
 		frame = min(frame, frames.size() - 1);
 	}
 
-	//find next frame
 	int nextFrame(int frame)
 	{
+		// find next frame, returns index for next frame
 		return min(frame + 1, frames.size() - 1);
 	}
 
-	Matrix44 interpolateBoneToGlobal(Matrix44* matrices, int baseFrame, float interpolationFact, Skeleton* skeleton, int boneIndex)
-	{
-		Matrix44 scale = Matrix44::scaling(interpolate(frames[baseFrame].scales[boneIndex], frames[nextFrame(baseFrame)].scales[boneIndex], interpolationFact));
-		Matrix44 rotation = interpolate(frames[baseFrame].rotations[boneIndex], frames[nextFrame(baseFrame)].rotations[boneIndex], interpolationFact).toMatrix();
-		Matrix44 translation = Matrix44::translation(interpolate(frames[baseFrame].positions[boneIndex], frames[nextFrame(baseFrame)].positions[boneIndex], interpolationFact));
-		Matrix44 local = translation * rotation * scale;
-		if (skeleton->bones[boneIndex].parentIndex > -1)
-		{
-			Matrix44 global = matrices[skeleton->bones[boneIndex].parentIndex] * local;
+	Matrix44 interpolateBoneToGlobal(Matrix44* matrices, int baseFrame, float interpolationFact, Skeleton* skeleton, int boneIndex) {
+		//Interpolates transformations for a specific bone and calculates its global transformation.
+		int nextFrameIndex = nextFrame(baseFrame);
+		Matrix44 temp;
+		// interpolate scale, rotation and translation
+		Matrix44 scale = temp.scaling(interpolate(frames[baseFrame].scales[boneIndex], frames[nextFrameIndex].scales[boneIndex], interpolationFact));
+		Matrix44 rotation = interpolate(frames[baseFrame].rotations[boneIndex], frames[nextFrameIndex].rotations[boneIndex], interpolationFact).toMatrix();
+		Matrix44 translation = Matrix44::translation(interpolate(frames[baseFrame].positions[boneIndex], frames[nextFrameIndex].positions[boneIndex], interpolationFact));
+		Matrix44 local = scale * rotation * translation;
+		if (skeleton->bones[boneIndex].parentIndex > -1) {
+			Matrix44 global = local * matrices[skeleton->bones[boneIndex].parentIndex];
 			return global;
 		}
 		return local;
 	}
+
+
 };
 
 class Animation
@@ -348,10 +382,11 @@ public:
 	std::map<std::string, AnimationSequence> animations; // map of animation sequences
 	Skeleton skeleton; // The skeleton structure defining bone hierarchy and transformations.
 
-	int boneSize() {
-		int boneSize = skeleton.bones.size();
-		return boneSize;
+	int bonesSize() {
+		int bonesSize = skeleton.bones.size();
+		return bonesSize;
 	}
+
 	// Calculation of the current frame and interpolation factor
 	void calcFrame(std::string name, float t, int& frame, float& interpolationFact) {
 		animations[name].calcFrame(t, frame, interpolationFact);
@@ -402,11 +437,11 @@ public:
 		int frame = 0;
 		float interpolationFact = 0;
 		animation->calcFrame(name, t, frame, interpolationFact);
-		for (int i = 0; i < 44; i++)
+		for (int i = 0; i < animation->bonesSize(); i++)
 		{
 			matrices[i] = animation->interpolateBoneToGlobal(name, matrices, frame, interpolationFact, i);
 		}
-		animation->calcFinalTransforms(matrices);//这里删除了一个形参，不确定对不对
+		animation->calcFinalTransforms(matrices);
 
 	}
 
