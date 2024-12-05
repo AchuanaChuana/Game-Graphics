@@ -10,15 +10,22 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 {
 	Window win;
 	DxCore dx;
-	Shaders shader;
-	plane plane;
-	StaticMesh banana;
-	StaticMesh pine;
+	Shaders shaderS;
+	Shaders shaderA;
+	Shaders shadernoTex;
+	Shaders shaderop;
+	//Shaders shadertile;
+	planewithTex plane;
+	staticMesh banana;
+	staticMesh pine;
+	animatedMesh gun;
+	animatedMesh dinasour;
 	FPCamera camera;
 	FPcamManager camman;
 	Checkkey check;
 	textureManager texman;
 	Matrix44 defaultMatrix;
+	Matrix44 biggerDefault = defaultMatrix.scaling(Vec3(4, 4, 4));
 	Checkmouse checkMouse(win.hwnd);
 	GamesEngineeringBase::Timer tim;
 
@@ -26,11 +33,17 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 	dx.Init(1024, 768, win.hwnd, false);
 	
 	//shader.init("Shaderv.txt", "Shaderp.txt", &dx);
-	shader.initStatic("Shaderv.txt", "Shaderp2.txt", &dx);
+	shaderop.initStatic("Shaderv.txt", "Shaderpop.txt", &dx);
+	shaderS.initStatic("Shaderv.txt", "Shaderp2.txt", &dx);
+	shaderA.initAnimated("Shaderv.txt", "Shaderp2.txt", &dx);
+	shadernoTex.initStatic("Shaderv.txt", "Shaderp.txt", &dx);
+	//shadertile.initStatic("Shaderv.txt", "Shaderptile.txt", &dx);
 
-	plane.init(&dx);
+	plane.init(&dx,&texman, std::string("Textures/grass.png"));
 	banana.loadMesh(&dx, "Resources/bananaclump.gem", &texman);
 	pine.loadMesh(&dx, "Resources/pine.gem",&texman);
+	dinasour.loadMesh(&dx, "Resources/TRex.gem", &texman);
+	gun.loadMesh(&dx, "Resources/Automatic_Carbine_5.gem", &texman);
 
 	float t = 0.f;
 	
@@ -65,10 +78,13 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 
 		dx.clear(); 
 	
-		shader.apply(&dx);
-		plane.draw(&dx, &shader, defaultMatrix, together);
-		banana.draw(&dx, &shader,texman, defaultMatrix, together);
-		pine.draw(&dx, &shader,texman, defaultMatrix, together);
+		plane.draw(&dx, &shaderS,texman, defaultMatrix, together);
+		banana.draw(&dx, &shaderS,texman, defaultMatrix, together);
+		pine.draw(&dx, &shaderop,texman, defaultMatrix, together);
+		//gun.draw(&shaderA, &dx, dt, texman, defaultMatrix, together);
+		gun.t += dt;
+		dinasour.draw(&shaderA, &dx, dt, texman, defaultMatrix, together);
+		dinasour.t += dt;
 
 		if (check.keyPressed(VK_ESCAPE))  break;  
 		dx.present();

@@ -172,9 +172,55 @@ public:
 
 	void draw(DxCore* core, Shaders*shader, Matrix44 Worldpos,Matrix44 Transform)
 	{
-		shader->updateConstantVS( "staticMeshBuffer", "W", &Worldpos);
+		shader->updateConstantVS("staticMeshBuffer", "W", &Worldpos);
 		shader->updateConstantVS("staticMeshBuffer", "VP", &Transform);
 		shader->apply(core);
+		mesh.draw(core);
+	}
+};
+
+class planewithTex
+{
+public:
+	Mesh mesh;
+	std::string materialFilename;
+	Texture* materialTexture;     
+
+	STATIC_VERTEX addVertex(Vec3 p, Vec3 n, float tu, float tv)
+	{
+		STATIC_VERTEX v;
+		v.pos = p;
+		v.normal = n;
+		v.tangent = Vec3(0, 0, 0);
+		v.tu = tu;
+		v.tv = tv;
+		return v;
+	}
+
+	void init(DxCore* core, textureManager* textures, const std::string& materialPath)
+	{
+		materialFilename = materialPath;
+		std::vector<STATIC_VERTEX> vertices;
+		vertices.push_back(addVertex(Vec3(-100, 0, -100), Vec3(0, 1, 0), 0, 0));
+		vertices.push_back(addVertex(Vec3(100, 0, -100), Vec3(0, 1, 0), 1, 0));
+		vertices.push_back(addVertex(Vec3(-100, 0, 100), Vec3(0, 1, 0), 0, 1));
+		vertices.push_back(addVertex(Vec3(100, 0, 100), Vec3(0, 1, 0), 1, 1));
+		std::vector<unsigned int> indices;
+		indices.push_back(2); indices.push_back(1); indices.push_back(0);
+		indices.push_back(1); indices.push_back(2); indices.push_back(3);
+		mesh.init(core, vertices, indices);
+		textures->load(core, materialFilename);
+	}
+
+	void draw(DxCore* core, Shaders* shader, textureManager textures, /*float tilingX, float tilingY, */Matrix44 Worldpos, Matrix44 Transform)
+	{
+		shader->updateConstantVS("staticMeshBuffer", "W", &Worldpos);
+		shader->updateConstantVS("staticMeshBuffer", "VP", &Transform);
+		//textures.bindTexture(core, shader, "Textures/grass.png", tilingX, tilingY);
+		shader->apply(core);
+		shader->updateTexturePS(core, "tex", textures.find("Textures/grass.png"));
+		//ID3D11ShaderResourceView* normalMap = textures.find("Textures/grass_normal.png");
+	
 		mesh.draw(core);
 	}
 };
@@ -204,7 +250,7 @@ public:
 //}
 //};
 
-class StaticMesh
+class staticMesh
 {
 public:
 	std::vector<Mesh> geoset;
@@ -366,7 +412,7 @@ public:
 
 };
 
-class loadanimation
+class animatedMesh
 {
 public:
 	std::vector<Mesh> geoset;
@@ -384,7 +430,8 @@ public:
 		for (int i = 0; i < gemmeshes.size(); i++) {
 			Mesh geo;
 			std::vector<ANIMATED_VERTEX> vertices;
-			for (int j = 0; j < gemmeshes[i].verticesAnimated.size(); j++) {
+			for (int j = 0; j < gemmeshes[i].verticesAnimated.size(); j++)
+			{
 				ANIMATED_VERTEX v;
 				memcpy(&v, &gemmeshes[i].verticesAnimated[j], sizeof(ANIMATED_VERTEX));
 				vertices.push_back(v);

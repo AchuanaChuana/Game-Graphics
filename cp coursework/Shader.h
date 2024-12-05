@@ -146,7 +146,6 @@ public:
 	void updateTexturePS(DxCore* core, std::string name, ID3D11ShaderResourceView* srv)
 	{
 		core->devicecontext->PSSetShaderResources(textureBindPointsPS[name], 1, &srv);
-	
 	}
 
 	void apply(DxCore* core)
