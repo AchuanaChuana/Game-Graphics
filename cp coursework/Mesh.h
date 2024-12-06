@@ -47,53 +47,6 @@ struct AnimationFrame
 	std::vector<Vec3> scales;
 };
 
-//class Triangle
-//{
-// public:
-//	 ID3D11Buffer* vertexBuffer;
-//	 Vertex vertices[3];
-//
-//	 //define a triagle
-//	void Init()
-//	{
-//	vertices[0].position = Vec3(0, 1.0f, 0);
-//	vertices[0].color = Color(0, 1.0f, 0);
-//	vertices[1].position = Vec3(-1.0f, -1.0f, 0);
-//	vertices[1].color = Color(1.0f, 0, 0);
-//	vertices[2].position = Vec3(1.0f, -1.0f, 0);
-//	vertices[2].color = Color(0, 0, 1.0f);
-//	
-//	}
-//
-//	//create a buffer in GPU to store verts
-//	void createBuffer(ID3D11Device* device)
-//	{
-//		D3D11_BUFFER_DESC bd;
-//		bd.Usage = D3D11_USAGE_DEFAULT;
-//		bd.CPUAccessFlags = 0;
-//		bd.MiscFlags = 0;
-//		D3D11_SUBRESOURCE_DATA uploadData;
-//		bd.ByteWidth = sizeof(Vertex) * 3;
-//		bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-//		uploadData.pSysMem = vertices;
-//		uploadData.SysMemPitch = 0;
-//		uploadData.SysMemSlicePitch = 0;
-//		device->CreateBuffer(&bd, &uploadData, &vertexBuffer);
-//	}
-//
-//	//draw triangle
-//	void draw(ID3D11DeviceContext* devicecontext)
-//	{
-//		UINT offsets;
-//		offsets = 0;
-//		UINT strides = sizeof(Vertex);
-//		devicecontext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-//		devicecontext->IASetVertexBuffers(0, 1, &vertexBuffer, &strides, &offsets);
-//		devicecontext->Draw(3, 0);
-//	}
-//
-//};
-
 class Mesh
 {
 public:
@@ -139,6 +92,7 @@ public:
 		core->devicecontext->IASetIndexBuffer(indexBuffer, DXGI_FORMAT_R32_UINT, 0);
 		core->devicecontext->DrawIndexed(indicesSize, 0, 0);
 	}
+
 };
 
 class plane
@@ -320,6 +274,42 @@ public:
 		{
 			shader->updateTexturePS(core, "tex", textures.find(textureFilenames[i]));
 		    geoset[i].draw(core);
+		}
+	}
+
+	std::vector<Matrix44> generateRandomPositions(int instanceCount, float rangeX, float rangeY, float rangeZ,Vec3 scale)
+	{
+		std::vector<Matrix44> positions;
+
+		for (int i = 0; i < instanceCount; i++)
+		{
+			Matrix44 randomPos;
+			randomPos.a[0][3] = static_cast<float>((rand() % static_cast<int>(rangeX * 2)) - rangeX);
+			randomPos.a[1][3] = static_cast<float>((rand() % static_cast<int>(rangeY * 2)) - rangeY);
+			randomPos.a[2][3] = static_cast<float>((rand() % static_cast<int>(rangeZ * 2)) - rangeZ);
+			randomPos.a[0][0] = scale.x;
+			randomPos.a[1][1] = scale.y;
+			randomPos.a[2][2] = scale.z;
+
+			positions.push_back(randomPos);
+		}
+
+		return positions;
+	}
+
+	void drawManyRand(DxCore* core, Shaders* shader, textureManager& textures, Matrix44 Transform, const std::vector<Matrix44>& Wpositions)
+	{
+		for (int i = 0; i < Wpositions.size(); i++)
+		{
+			shader->updateConstantVS("staticMeshBuffer", "W", const_cast<void*>(reinterpret_cast<const void*>(&Wpositions[i])));
+			shader->updateConstantVS("staticMeshBuffer", "VP", &Transform);
+			shader->apply(core);
+
+			for (int j = 0; j < geoset.size(); j++)
+			{
+				shader->updateTexturePS(core, "tex", textures.find(textureFilenames[j]));
+				geoset[j].draw(core);
+			}
 		}
 	}
 };

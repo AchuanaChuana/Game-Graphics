@@ -1,0 +1,29 @@
+struct PS_INPUT
+{
+    float4 Pos : SV_POSITION;
+    float3 Normal : NORMAL;
+    float3 Tangent : TANGENT;
+    float2 TexCoords : TEXCOORD;
+};
+
+float4 PS(PS_INPUT input) : SV_Target0
+{
+    // Calculate screen-space derivatives to approximate the normal change.
+    float3 dx = ddx(input.Normal);
+    float3 dy = ddy(input.Normal);
+
+    // Calculate the gradient magnitude to detect edges.
+    float gradientMagnitude = length(cross(dx, dy));
+
+    // Set a threshold to determine which pixels belong to the outline.
+    float threshold = 0.3;  // You can adjust this value to refine the outline.
+
+    if (gradientMagnitude > threshold)
+    {
+        // This pixel is part of the outline.
+        return float4(1.0, 1.0, 1.0, 1.0);
+    }
+    
+    // Regular object color (green in this example).
+    return float4(0.0, 1.0, 0.0, 1.0);
+}

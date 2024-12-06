@@ -8,11 +8,33 @@
 #include <DirectXMath.h> 
 #include <stdexcept> 
 
+class sampler
+{
+public:
+    ID3D11SamplerState* state;
+
+    void init(DxCore* core)
+    {
+        D3D11_SAMPLER_DESC samplerDesc;
+        ZeroMemory(&samplerDesc, sizeof(samplerDesc));
+        samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+        samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
+        samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
+        samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
+        samplerDesc.ComparisonFunc = D3D11_COMPARISON_NEVER;
+        samplerDesc.MinLOD = 0;
+        samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
+        core->device->CreateSamplerState(&samplerDesc, &state);
+    }
+
+};
+
 class Texture
 {
  public:
     ID3D11Texture2D* texture;
     ID3D11ShaderResourceView* srv;
+    sampler sam;
     void init(DxCore* core,float width, float height, int channels, unsigned char* data,DXGI_FORMAT format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB)
     {
         D3D11_TEXTURE2D_DESC texDesc;
@@ -69,6 +91,7 @@ class Texture
             // Initialize texture using width, height, channels, and texels
         }
         stbi_image_free(texels);
+        sam.init(core);
 	}
 
    /* void free()
@@ -101,28 +124,6 @@ class Texture
     }
 };
 
-
-
-class sampler
-{
-public:
-    ID3D11SamplerState* state;
-
-    void init(DxCore* core)
-    {
-        D3D11_SAMPLER_DESC samplerDesc;
-        ZeroMemory(&samplerDesc, sizeof(samplerDesc));
-        samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
-        samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
-        samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
-        samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
-        samplerDesc.ComparisonFunc = D3D11_COMPARISON_NEVER;
-        samplerDesc.MinLOD = 0;
-        samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
-        core->device->CreateSamplerState(&samplerDesc, &state);
-    }
-
-};
 
 //struct TilingFactor
 //{
@@ -196,7 +197,6 @@ class textureManager
 {
 public:
     std::map<std::string, Texture*> textures;
-    sampler sam;
    // TilingBuffer tilingBuffer;
 
     void load(DxCore* core, std::string filename)
@@ -208,7 +208,6 @@ public:
         }
         Texture* texture = new Texture();
         texture->load(core, filename);
-        sam.init(core);
         textures.insert({ filename, texture });
     }
 
@@ -221,7 +220,7 @@ public:
 
         Texture* texture = new Texture();
         texture->loadNormalMap(core, filename);
-        sam.init(core);
+   
         textures.insert({ filename, texture });
     }
 
@@ -252,8 +251,6 @@ public:
     //    tilingBuffer.bind(core);
     //    core->devicecontext->PSSetShaderResources(0, 1, &texture);
     //}
-
-
 
   /* void unload(std::string name)
     {

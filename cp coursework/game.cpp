@@ -14,51 +14,51 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 	Shaders shaderA;
 	Shaders shadernoTex;
 	Shaders shaderop;
-	//Shaders shadertile;
+	Shaders shaderstyle;
 	planewithTex plane;
-	staticMesh banana;
-	staticMesh pine;
+	staticMesh bamboo;
+	staticMesh flower;
 	Sphere dome;
 	animatedMesh gun;
 	animatedMesh dinasour;
 	FPCamera camera;
-	FPcamManager camman;
 	Checkkey check;
 	textureManager texman;
 	Matrix44 defaultMatrix;
 	Matrix44 biggerDefault = defaultMatrix.scaling(Vec3(100, 100, 100));
 	Checkmouse checkMouse(win.hwnd);
 	GamesEngineeringBase::Timer tim;
+	srand(time(NULL));
 
 	win.Init(1024, 768, "MyWindow");
 	dx.Init(1024, 768, win.hwnd, false);
 	
-	//shader.init("Shaderv.txt", "Shaderp.txt", &dx);
 	shaderop.initStatic("Shaderv.txt", "Shaderpop.txt", &dx);
 	shaderS.initStatic("Shaderv.txt", "Shaderp2.txt", &dx);
 	shaderA.initAnimated("Shadervmove.txt", "Shaderp2.txt", &dx);
 	shadernoTex.initStatic("Shaderv.txt", "Shaderp.txt", &dx);
-	//shadertile.initStatic("Shaderv.txt", "Shaderptile.txt", &dx);
+	shaderstyle.initStatic("Shaderv.txt", "Shaderpline.txt", &dx);
 
 	plane.init(&dx,&texman, std::string("Textures/snowbc.png"));
-	banana.loadMesh(&dx, "Resources/bananaclump.gem", &texman);
-	pine.loadMesh(&dx, "Resources/pine.gem",&texman);
+	flower.loadMesh(&dx, "Resources/flower1.gem", &texman);
+	bamboo.loadMesh(&dx, "Resources/bamboo.gem",&texman);
 	dinasour.loadMesh(&dx, "Resources/TRex.gem", &texman);
-	gun.loadMesh(&dx, "Resources/Automatic_Carbine_5.gem", &texman);
-	dome.init(&dx, &texman, std::string("Textures/HDRI/cloudyblue.png"), 30, 30, 4000);
+	dome.init(&dx, &texman, std::string("Textures/HDRI/cloudyblue.png"), 30, 30, 10000);
 
 	float t = 0.f;
 	
-	Vec4 eye = Vec4(500.f, 80.f,500.f,1.f);
-	Vec4 center = Vec4(0.f, 80.f, 0.f, 1.f);
+	Vec4 eye = Vec4(500.f, 120.f,500.f,1.f);
+	Vec4 center = Vec4(0.f, 120.f, 0.f, 1.f);
 	Vec4 up = Vec4(0.f, 1.f, 0.f, 1.f);
 
 	/*camman.setAll( eye, center, up, 45.f, 1024.f / 768.f, 0.1f, 5000.f);*/
 	camera.setPosition(eye);
 	camera.setTarget(center);
 	camera.setViewMatrix(eye, center, up);
-	camera.setProjectionMatrix(45, 1024.f / 768.f, 0.1, 8000);
+	camera.setProjectionMatrix(45, 1024.f / 768.f, 0.1, 20000);
 
+	vector<Matrix44> bambooPos = bamboo.generateRandomPositions(20, 3000, 1, 3000, Vec3(3,3,3));
+	vector<Matrix44> flowerPos = flower.generateRandomPositions(30, 2000, 1, 2000, Vec3(1, 1, 1));
 	while (true)
 	{
 		win.processMessages();
@@ -81,10 +81,9 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 		dx.clear(); 
 	
 		plane.draw(&dx, &shaderS,texman, "Textures/snowbc.png", defaultMatrix, together);
-		banana.draw(&dx, &shaderS,texman, defaultMatrix, together);
-		pine.draw(&dx, &shaderop,texman, defaultMatrix, together);
-		/*gun.draw(&shaderA, &dx, dt, texman, defaultMatrix, together);
-		gun.t += dt;*/
+		//pine.draw(&dx, &shaderop,texman, defaultMatrix, together);
+		bamboo.drawManyRand(&dx, &shaderop, texman, together, bambooPos);
+		flower.drawManyRand(&dx, &shaderop, texman, together, flowerPos);
 		dinasour.draw(&shaderA, &dx, dt, texman, biggerDefault, together);
 		dinasour.t += dt;
 		dome.draw(&dx, &shaderS, texman,"Textures/HDRI/cloudyblue.png", defaultMatrix, together);

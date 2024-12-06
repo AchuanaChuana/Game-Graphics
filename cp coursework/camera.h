@@ -76,6 +76,8 @@ public:
     void moveForward(float speed,float dt)
     {
         Vec4 forward = NormalizenoW(MinusnoW(target, position));
+        forward.y = 0.0f;
+        forward = NormalizenoW(forward);
 
         if (check.keyPressed('W'))
         { 
@@ -88,6 +90,8 @@ public:
     void moveBackward(float speed, float dt)
     {
         Vec4 forward =NormalizenoW(MinusnoW(target, position));
+        forward.y = 0.0f;
+        forward = NormalizenoW(forward);
 
         if (check.keyPressed('S'))
         { 
@@ -100,6 +104,8 @@ public:
     void moveRight(float speed,float dt)
     {
         Vec4 forward = NormalizenoW( MinusnoW(target, position));
+        forward.y = 0.0f;
+        forward = NormalizenoW(forward);
         Vec4 right = NormalizenoW(Cross(forward, upVector)); 
 
         if (check.keyPressed('D'))
@@ -113,6 +119,8 @@ public:
     void moveLeft(float speed, float dt)
     {
         Vec4 forward = NormalizenoW(MinusnoW(target, position));
+        forward.y = 0.0f;
+        forward = NormalizenoW(forward);
         Vec4 right = NormalizenoW(Cross(forward, upVector));
 
         if (check.keyPressed('A'))
@@ -151,19 +159,6 @@ public:
         updateViewMatrix();
     }
 
-  
-
-    //void moveUp(float amount)
-//{
-//    position = position + upVector * amount;
-//    target = target + upVector * amount;
-//    updateViewMatrix();
-//}
-
-//void moveDown(float amount)
-//{
-//    moveUp(-amount);
-//}
 
 };
 
