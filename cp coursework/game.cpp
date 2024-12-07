@@ -10,17 +10,21 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 {
 	Window win;
 	DxCore dx;
+
 	Shaders shaderS;
 	Shaders shaderA;
 	Shaders shadernoTex;
 	Shaders shaderop;
 	Shaders shaderstyle;
+
 	planewithTex plane;
 	staticMesh bamboo;
 	staticMesh flower;
+	Box box;
 	Sphere dome;
-	animatedMesh gun;
 	animatedMesh dinasour;
+	Snow snow;
+
 	FPCamera camera;
 	Checkkey check;
 	textureManager texman;
@@ -43,7 +47,10 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 	flower.loadMesh(&dx, "Resources/flower1.gem", &texman);
 	bamboo.loadMesh(&dx, "Resources/bamboo.gem",&texman);
 	dinasour.loadMesh(&dx, "Resources/TRex.gem", &texman);
-	dome.init(&dx, &texman, std::string("Textures/HDRI/cloudyblue.png"), 30, 30, 10000);
+	dome.init(&dx, &texman, std::string("Textures/HDRI/cloudyblue.png"), 30, 30, 30000);
+	box.init(&dx, &texman, std::string("Textures/grass.png"), 100.f, 800.f, 100.f);
+	snow.init(&dx, &texman, 4, 4, 20, 200);
+
 
 	float t = 0.f;
 	
@@ -51,23 +58,22 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 	Vec4 center = Vec4(0.f, 120.f, 0.f, 1.f);
 	Vec4 up = Vec4(0.f, 1.f, 0.f, 1.f);
 
-	/*camman.setAll( eye, center, up, 45.f, 1024.f / 768.f, 0.1f, 5000.f);*/
 	camera.setPosition(eye);
 	camera.setTarget(center);
 	camera.setViewMatrix(eye, center, up);
-	camera.setProjectionMatrix(45, 1024.f / 768.f, 0.1, 20000);
+	camera.setProjectionMatrix(45, 1024.f / 768.f, 0.1, 50000);
 
-	vector<Matrix44> bambooPos = bamboo.generateRandomPositions(20, 3000, 1, 3000, Vec3(3,3,3));
-	vector<Matrix44> flowerPos = flower.generateRandomPositions(30, 2000, 1, 2000, Vec3(1, 1, 1));
+	vector<Matrix44> bambooPos = bamboo.generateRandomPositions(30, 3000, 1, 3000, Vec3(3,3,3));
+	vector<Matrix44> flowerPos = flower.generateRandomPositions(100, 3000, 1, 3000, Vec3(1, 1, 1));
+
 	while (true)
 	{
 		win.processMessages();
 		float dt = tim.dt();
 
-		/*camman.cameraMovement(checkMouse,400.f,dt);*/
 		float mouseX, mouseY;
 		checkMouse.getMouseMovement(mouseX, mouseY);
-		camera.processMouseInput(mouseX, mouseY,400.f, dt);
+		camera.processMouseInput(mouseX, mouseY,100.f, dt);
 		camera.updateCameraDirection();
 		camera.moveForward(700.f, dt);
 		camera.moveBackward(500.f, dt);
@@ -79,13 +85,15 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 	    Matrix44 together = viewmatrix* projectionmatrix ;
 
 		dx.clear(); 
+		snow.update(dt);
 	
 		plane.draw(&dx, &shaderS,texman, "Textures/snowbc.png", defaultMatrix, together);
-		//pine.draw(&dx, &shaderop,texman, defaultMatrix, together);
 		bamboo.drawManyRand(&dx, &shaderop, texman, together, bambooPos);
 		flower.drawManyRand(&dx, &shaderop, texman, together, flowerPos);
-		dinasour.draw(&shaderA, &dx, dt, texman, biggerDefault, together);
+		//dinasour.draw(&shaderA, &dx, dt, texman, biggerDefault, together);
 		dinasour.t += dt;
+		//box.draw(&dx, &shaderS, texman, "Textures/grass.png", defaultMatrix, together);
+		snow.drawManyRand(&dx, &shadernoTex,  together);
 		dome.draw(&dx, &shaderS, texman,"Textures/HDRI/cloudyblue.png", defaultMatrix, together);
 
 		if (check.keyPressed(VK_ESCAPE))  break;  

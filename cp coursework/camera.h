@@ -3,6 +3,7 @@
 #include "Checkkey.h"
 #include <cmath>
 
+
 class FPCamera : public Transform
 {
 public:
@@ -159,6 +160,18 @@ public:
         updateViewMatrix();
     }
 
+   //AABB getCameraAABB() const
+   // {
+   //     AABB camBox;
+   //     camBox.minimum = Vec3(position.x - 50,
+   //         position.y - 100,
+   //         position.z - 50);
+
+   //     camBox.maximum = Vec3(position.x + 50,
+   //         position.y + 500,
+   //         position.z + 50);
+   //     return camBox;
+   // }
 
 };
 
@@ -188,3 +201,5 @@ public:
     }
 
 };
+
+

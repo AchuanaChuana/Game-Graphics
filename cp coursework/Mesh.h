@@ -5,6 +5,7 @@
 #include "GEMloader.h"
 #include "Texture.h"
 #include "Shader.h"
+#include "collision.h"
 
 
 struct STATIC_VERTEX
@@ -114,10 +115,10 @@ public:
 	void init(DxCore* core)
 	{
 		std::vector<STATIC_VERTEX> vertices;
-		vertices.push_back(addVertex(Vec3(-1000, 0, -1000), Vec3(0, 1, 0), 0, 0));
-		vertices.push_back(addVertex(Vec3(1000, 0, -1000), Vec3(0, 1, 0), 1, 0));
-		vertices.push_back(addVertex(Vec3(-1000, 0, 1000), Vec3(0, 1, 0), 0, 1));
-		vertices.push_back(addVertex(Vec3(1000, 0, 1000), Vec3(0, 1, 0), 1, 1));
+		vertices.push_back(addVertex(Vec3(-10000, 0, -10000), Vec3(0, 1, 0), 0, 0));
+		vertices.push_back(addVertex(Vec3(10000, 0, -10000), Vec3(0, 1, 0), 1, 0));
+		vertices.push_back(addVertex(Vec3(-10000, 0, 10000), Vec3(0, 1, 0), 0, 1));
+		vertices.push_back(addVertex(Vec3(10000, 0, 10000), Vec3(0, 1, 0), 1, 1));
 		std::vector<unsigned int> indices;
 		indices.push_back(2); indices.push_back(1); indices.push_back(0);
 		indices.push_back(1); indices.push_back(2); indices.push_back(3);
@@ -165,16 +166,167 @@ public:
 		textures->load(core, materialFilename);
 	}
 
-	void draw(DxCore* core, Shaders* shader, textureManager textures, std:: string filename,/*float tilingX, float tilingY, */Matrix44 Worldpos, Matrix44 Transform)
+	void draw(DxCore* core, Shaders* shader, textureManager textures, std:: string filename,Matrix44 Worldpos, Matrix44 Transform)
 	{
 		shader->updateConstantVS("staticMeshBuffer", "W", &Worldpos);
 		shader->updateConstantVS("staticMeshBuffer", "VP", &Transform);
-		//textures.bindTexture(core, shader, "Textures/grass.png", tilingX, tilingY);
 		shader->apply(core);
 		shader->updateTexturePS(core, "tex", textures.find(filename));
-		//ID3D11ShaderResourceView* normalMap = textures.find("Textures/grass_normal.png");
 	
 		mesh.draw(core);
+	}
+};
+
+class Box
+{
+public:
+	Mesh box;
+	std::string materialFilename;
+
+	STATIC_VERTEX addVertex(Vec3 p, Vec3 n, float tu, float tv)
+	{
+		STATIC_VERTEX v;
+		v.pos = p;
+		v.normal = n;
+		v.tangent = Vec3(0, 0, 0);
+		v.tu = tu;
+		v.tv = tv;
+		return v;
+	}
+
+	void init(DxCore* core, textureManager* textures, const std::string& materialPath, float width = 100.0f, float height = 100.0f, float depth = 100.0f)
+	{
+		materialFilename = materialPath;
+		std::vector<STATIC_VERTEX> vertices;
+		std::vector<unsigned int> indices;
+
+		float halfW = width * 0.5f;
+		float halfH = height * 0.5f;
+		float halfD = depth * 0.5f;
+
+		{
+			Vec3 normal(0, 0, 1);
+			Vec3 v0(-halfW, -halfH, halfD);
+			Vec3 v1(halfW, -halfH, halfD);
+			Vec3 v2(-halfW, halfH, halfD);
+			Vec3 v3(halfW, halfH, halfD);
+
+			unsigned startIndex = (unsigned)vertices.size();
+			vertices.push_back(addVertex(v0, normal, 0.0f, 1.0f));
+			vertices.push_back(addVertex(v1, normal, 1.0f, 1.0f));
+			vertices.push_back(addVertex(v2, normal, 0.0f, 0.0f));
+			vertices.push_back(addVertex(v3, normal, 1.0f, 0.0f));
+
+			indices.push_back(startIndex + 0); indices.push_back(startIndex + 1); indices.push_back(startIndex + 2);
+			indices.push_back(startIndex + 2); indices.push_back(startIndex + 1); indices.push_back(startIndex + 3);
+		}
+
+		{
+			Vec3 normal(0, 0, -1);
+			Vec3 v0(halfW, -halfH, -halfD);
+			Vec3 v1(-halfW, -halfH, -halfD);
+			Vec3 v2(halfW, halfH, -halfD);
+			Vec3 v3(-halfW, halfH, -halfD);
+
+			unsigned startIndex = (unsigned)vertices.size();
+			vertices.push_back(addVertex(v0, normal, 0.0f, 1.0f));
+			vertices.push_back(addVertex(v1, normal, 1.0f, 1.0f));
+			vertices.push_back(addVertex(v2, normal, 0.0f, 0.0f));
+			vertices.push_back(addVertex(v3, normal, 1.0f, 0.0f));
+
+			indices.push_back(startIndex + 0); indices.push_back(startIndex + 1); indices.push_back(startIndex + 2);
+			indices.push_back(startIndex + 2); indices.push_back(startIndex + 1); indices.push_back(startIndex + 3);
+		}
+
+		{
+			Vec3 normal(-1, 0, 0);
+			Vec3 v0(-halfW, -halfH, -halfD);
+			Vec3 v1(-halfW, -halfH, halfD);
+			Vec3 v2(-halfW, halfH, -halfD);
+			Vec3 v3(-halfW, halfH, halfD);
+
+			unsigned startIndex = (unsigned)vertices.size();
+			vertices.push_back(addVertex(v0, normal, 0.0f, 1.0f));
+			vertices.push_back(addVertex(v1, normal, 1.0f, 1.0f));
+			vertices.push_back(addVertex(v2, normal, 0.0f, 0.0f));
+			vertices.push_back(addVertex(v3, normal, 1.0f, 0.0f));
+
+			indices.push_back(startIndex + 0); indices.push_back(startIndex + 1); indices.push_back(startIndex + 2);
+			indices.push_back(startIndex + 2); indices.push_back(startIndex + 1); indices.push_back(startIndex + 3);
+		}
+
+		{
+			Vec3 normal(1, 0, 0);
+			Vec3 v0(halfW, -halfH, halfD);
+			Vec3 v1(halfW, -halfH, -halfD);
+			Vec3 v2(halfW, halfH, halfD);
+			Vec3 v3(halfW, halfH, -halfD);
+
+			unsigned startIndex = (unsigned)vertices.size();
+			vertices.push_back(addVertex(v0, normal, 0.0f, 1.0f));
+			vertices.push_back(addVertex(v1, normal, 1.0f, 1.0f));
+			vertices.push_back(addVertex(v2, normal, 0.0f, 0.0f));
+			vertices.push_back(addVertex(v3, normal, 1.0f, 0.0f));
+
+			indices.push_back(startIndex + 0); indices.push_back(startIndex + 1); indices.push_back(startIndex + 2);
+			indices.push_back(startIndex + 2); indices.push_back(startIndex + 1); indices.push_back(startIndex + 3);
+		}
+
+		{
+			Vec3 normal(0, 1, 0);
+			Vec3 v0(-halfW, halfH, halfD);
+			Vec3 v1(halfW, halfH, halfD);
+			Vec3 v2(-halfW, halfH, -halfD);
+			Vec3 v3(halfW, halfH, -halfD);
+
+			unsigned startIndex = (unsigned)vertices.size();
+			vertices.push_back(addVertex(v0, normal, 0.0f, 1.0f));
+			vertices.push_back(addVertex(v1, normal, 1.0f, 1.0f));
+			vertices.push_back(addVertex(v2, normal, 0.0f, 0.0f));
+			vertices.push_back(addVertex(v3, normal, 1.0f, 0.0f));
+
+			indices.push_back(startIndex + 0); indices.push_back(startIndex + 1); indices.push_back(startIndex + 2);
+			indices.push_back(startIndex + 2); indices.push_back(startIndex + 1); indices.push_back(startIndex + 3);
+		}
+
+		{
+			Vec3 normal(0, -1, 0);
+			Vec3 v0(-halfW, -halfH, -halfD);
+			Vec3 v1(halfW, -halfH, -halfD);
+			Vec3 v2(-halfW, -halfH, halfD);
+			Vec3 v3(halfW, -halfH, halfD);
+
+			unsigned startIndex = (unsigned)vertices.size();
+			vertices.push_back(addVertex(v0, normal, 0.0f, 1.0f));
+			vertices.push_back(addVertex(v1, normal, 1.0f, 1.0f));
+			vertices.push_back(addVertex(v2, normal, 0.0f, 0.0f));
+			vertices.push_back(addVertex(v3, normal, 1.0f, 0.0f));
+
+			indices.push_back(startIndex + 0); indices.push_back(startIndex + 1); indices.push_back(startIndex + 2);
+			indices.push_back(startIndex + 2); indices.push_back(startIndex + 1); indices.push_back(startIndex + 3);
+		}
+
+		box.init(core, vertices, indices);
+		textures->load(core, materialFilename);
+	}
+
+	//AABB getAABB(const Matrix44& worldTransform, Vec3 mini, Vec3 maxi) const
+	//{
+	//	AABB localAABB;
+	//	localAABB.minimum = mini;
+	//	localAABB.maximum = maxi;
+
+	//	// 转换AABB到世界坐标系
+	//	return collision::transformAABB(localAABB, worldTransform);
+	//}
+
+	void draw(DxCore* core, Shaders* shader, textureManager textures, std::string filename, Matrix44 Worldpos, Matrix44 Transform)
+	{
+		shader->updateConstantVS("staticMeshBuffer", "W", &Worldpos);
+		shader->updateConstantVS("staticMeshBuffer", "VP", &Transform);
+		shader->apply(core);
+		shader->updateTexturePS(core, "tex", textures.find(filename));
+		box.draw(core);
 	}
 };
 
@@ -237,11 +389,129 @@ void draw(DxCore* core,Shaders* shader, textureManager textures, std::string fil
 }
 };
 
+class Snow {
+public:
+	std::vector<Mesh> snowset;                 // 雪花网格集合
+	std::vector<Matrix44> activePositions;    // 当前活跃雪花位置
+	std::string materialFilename;             // 材质文件路径
+	textureManager* textures;                 // 纹理管理器指针
+
+	float snowSpeed = 120.0f;                  // 雪花下降速度
+
+	// 添加顶点的工具函数
+	STATIC_VERTEX addVertex(Vec3 p, Vec3 n, float tu, float tv) {
+		STATIC_VERTEX v;
+		v.pos = p;
+		v.normal = n;
+		v.tangent = Vec3(0, 0, 0);
+		v.tu = tu;
+		v.tv = tv;
+		return v;
+	}
+
+	// 初始化单个雪花网格
+	void initSingleSnowflake(Mesh& mesh, DxCore* core, int rings, int segments, float radius) {
+		std::vector<STATIC_VERTEX> vertices;
+		std::vector<unsigned int> indices;
+
+		for (int lat = 0; lat <= rings; lat++) {
+			float theta = lat * PI / rings;
+			float sinTheta = sinf(theta);
+			float cosTheta = cosf(theta);
+
+			for (int lon = 0; lon <= segments; lon++) {
+				float phi = lon * 2.0f * PI / segments;
+				float sinPhi = sinf(phi);
+				float cosPhi = cosf(phi);
+
+				Vec3 position(radius * sinTheta * cosPhi, radius * cosTheta, radius * sinTheta * sinPhi);
+				Vec3 normal = position.Normalize();
+				float tu = 1.0f - (float)lon / segments;
+				float tv = 1.0f - (float)lat / rings;
+
+				vertices.push_back(addVertex(position, normal, tu, tv));
+
+				int current = lat * (segments + 1) + lon;
+				int next = current + segments + 1;
+
+				if (lat < rings && lon < segments) {
+					indices.push_back(current);
+					indices.push_back(next);
+					indices.push_back(current + 1);
+
+					indices.push_back(current + 1);
+					indices.push_back(next);
+					indices.push_back(next + 1);
+				}
+			}
+		}
+
+		mesh.init(core, vertices, indices);
+	}
+
+	// 初始化雪花系统
+	void init(DxCore* core, textureManager* textureManager, int rings, int segments, float radius, int instanceCount) {
+		textures = textureManager;
+
+		// 初始化单个雪花网格
+		Mesh snowflakeMesh;
+		initSingleSnowflake(snowflakeMesh, core, rings, segments, radius);
+		snowset.push_back(snowflakeMesh);
+
+		// 初始化活跃雪花位置，设置随机高度范围 [500, 1000]
+		for (int i = 0; i < instanceCount; i++) {
+			activePositions.push_back(generateRandomPosition(2000.0f, 500.0f, 3000.0f, 2000.0f, Vec3(0.5f, 0.5f, 0.5f)));
+		}
+	}
+
+	// 生成单个随机位置
+	Matrix44 generateRandomPosition(float rangeX, float minY, float maxY, float rangeZ, Vec3 scale) {
+		Matrix44 randomPos;
+
+		randomPos.a[0][3] = static_cast<float>((rand() % static_cast<int>(rangeX * 2)) - rangeX); // 随机X位置
+		randomPos.a[1][3] = static_cast<float>((rand() % static_cast<int>(maxY - minY)) + minY);  // 随机高度
+		randomPos.a[2][3] = static_cast<float>((rand() % static_cast<int>(rangeZ * 2)) - rangeZ); // 随机Z位置
+
+		randomPos.a[0][0] = scale.x;
+		randomPos.a[1][1] = scale.y;
+		randomPos.a[2][2] = scale.z;
+
+		return randomPos;
+	}
+
+	// 更新雪花位置
+	void update(float deltaTime) {
+		for (int i = 0; i < activePositions.size(); i++) {
+			// 雪花下降
+			activePositions[i].a[1][3] -= snowSpeed * deltaTime;
+
+			// 如果雪花落到 Y < -30，则重新生成
+			if (activePositions[i].a[1][3] < -10.0f) {
+				activePositions[i] = generateRandomPosition(2000.0f, 2000.0f, 3000.0f, 2000.0f, Vec3(0.5f, 0.5f, 0.5f));
+			}
+		}
+	}
+
+	// 批量绘制雪花
+	void drawManyRand(DxCore* core, Shaders* shader, Matrix44 Transform) {
+		for (const auto& Wpos : activePositions) {
+			shader->updateConstantVS("staticMeshBuffer", "W", const_cast<void*>(reinterpret_cast<const void*>(&Wpos)));
+			shader->updateConstantVS("staticMeshBuffer", "VP", &Transform);
+			shader->apply(core);
+
+			for (int j = 0; j < snowset.size(); j++) {
+				snowset[j].draw(core);
+			}
+		}
+	}
+};
+
 class staticMesh
 {
 public:
 	std::vector<Mesh> geoset;
 	std::vector<std::string> textureFilenames;
+	//std::vector<AABB> aabbList;
 
 	void loadMesh(DxCore* core, std::string filename,  textureManager* textures)
 	{
@@ -252,16 +522,23 @@ public:
 		{
 			Mesh geo;
 			std::vector<STATIC_VERTEX> vertices;
+			//AABB aabb;
+
 			for (int j = 0; j < gemmeshes[i].verticesStatic.size(); j++)
 			{
 				STATIC_VERTEX v;
 				memcpy(&v, &gemmeshes[i].verticesStatic[j], sizeof(STATIC_VERTEX));
 				vertices.push_back(v);
+
+				Vec3 pos(v.pos.x, v.pos.y, v.pos.z);
+				//aabb.expand(pos);
 			}
+
 			textureFilenames.push_back(gemmeshes[i].material.find("diffuse").getValue());
 			textures->load(core, gemmeshes[i].material.find("diffuse").getValue());
 			geo.init(core,vertices, gemmeshes[i].indices);
 			geoset.push_back(geo);
+			//aabbList.push_back(aabb);
 		}
 	}
 

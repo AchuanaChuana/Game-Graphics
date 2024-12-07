@@ -134,6 +134,7 @@
   <ItemGroup>
     <ClInclude Include="camera.h" />
     <ClInclude Include="Checkkey.h" />
+    <ClInclude Include="collision.h" />
     <ClInclude Include="dxCore.h" />
     <ClInclude Include="GamesEngineeringBase.h" />
     <ClInclude Include="GEMLoader.h" />
