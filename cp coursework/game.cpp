@@ -16,6 +16,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 	Shaders shadernoTex;
 	Shaders shaderop;
 	Shaders shaderstyle;
+	Shaders shaderwater;
 
 	planewithTex plane;
 	staticMesh bamboo;
@@ -25,6 +26,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 	//animatedMesh dinasour;
 	drawDinosaur dina(3000.f,3000.f);
 	Snow snow;
+	WaterPlane water;
 
 	FPCamera camera;
 	Checkkey check;
@@ -42,7 +44,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 	shaderS.initStatic("Shaderv.txt", "Shaderp2.txt", &dx);
 	shaderA.initAnimated("Shadervmove.txt", "Shaderp2.txt", &dx);
 	shadernoTex.initStatic("Shaderv.txt", "Shaderp.txt", &dx);
-	shaderstyle.initStatic("Shaderv.txt", "Shaderpline.txt", &dx);
+	shaderwater.initStatic("Shadervwater.txt", "Shaderpwater.txt", &dx);
 
 	plane.init(&dx,&texman, std::string("Textures/snowbc.png"));
 	flower.loadMesh(&dx, "Resources/flower1.gem", &texman);
@@ -52,7 +54,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 	dome.init(&dx, &texman, std::string("Textures/HDRI/cloudyblue.png"), 30, 30, 30000);
 	box.init(&dx, &texman, std::string("Textures/grass.png"), 100.f, 800.f, 100.f);
 	snow.init(&dx, &texman, 4, 4, 20, 200);
-
+	water.init(&dx, &texman, std::string("Textures/water.png"));
 
 	float t = 0.f;
 	
@@ -88,6 +90,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 
 		dx.clear(); 
 		snow.update(dt);
+		water.update(dt);
 	
 		plane.draw(&dx, &shaderS,texman, "Textures/snowbc.png", defaultMatrix, together);
 		bamboo.drawManyRand(&dx, &shaderop, texman, together, bambooPos);
@@ -98,6 +101,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 		//box.draw(&dx, &shaderS, texman, "Textures/grass.png", defaultMatrix, together);
 		snow.drawManyRand(&dx, &shadernoTex,  together);
 		dome.draw(&dx, &shaderS, texman,"Textures/HDRI/cloudyblue.png", defaultMatrix, together);
+		water.draw(&dx, &shaderwater,texman,"Textures/water.png", 1.0f,defaultMatrix.translation(Vec3(0,20,0)), together);
 
 		if (check.keyPressed(VK_ESCAPE))  break;  
 		dx.present();

@@ -35,8 +35,7 @@ class Texture
     ID3D11Texture2D* texture;
     ID3D11ShaderResourceView* srv;
     sampler sam;
-    bool isNormalMap;
-
+  
     void init(DxCore* core,float width, float height, int channels, unsigned char* data,DXGI_FORMAT format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB)
     {
         D3D11_TEXTURE2D_DESC texDesc;
@@ -101,31 +100,6 @@ class Texture
         srv->Release();
         texture->Release();
     }*/
-
-    void loadNormalMap(DxCore* core, std::string filename)
-    {
-        int width = 0, height = 0, channels = 0;
-        unsigned char* texels = stbi_load(filename.c_str(), &width, &height, &channels, 0);
-        if (!texels)
-        {
-            throw std::runtime_error("Failed to load normal map: " + filename);
-        }
-
-        // 法线贴图格式为 RGBA，确保有 4 个通道
-        if (channels < 3)
-        {
-            stbi_image_free(texels);
-            throw std::runtime_error("Invalid normal map format: " + filename);
-        }
-
-        // 标记为法线贴图
-        isNormalMap = true;
-
-        // 使用 DXGI_FORMAT_R8G8B8A8_UNORM 处理法线贴图
-        init(core, width, height, channels, texels, DXGI_FORMAT_R8G8B8A8_UNORM);
-        stbi_image_free(texels);
-        sam.init(core);
-    }
 };
 
 class textureManager
@@ -146,34 +120,20 @@ public:
         textures.insert({ filename, texture });
     }
 
-    void loadNormalMap(DxCore* core, std::string filename)
-    {
-        if (textures.find(filename) != textures.end())
-        {
-            return;
-        }
-
-        Texture* texture = new Texture();
-        texture->loadNormalMap(core, filename);
+    //    Texture* texture = new Texture();
+    //    texture->loadNormalMap(core, filename);
    
-        textures.insert({ filename, texture });
-    }
+    //    textures.insert({ filename, texture });
+    //}
 
     ID3D11ShaderResourceView* find(std::string name)
     {
-        return textures[name]->srv;
-    }
-
-    ID3D11ShaderResourceView* findNormalMap(const std::string& name)
-    {
-        auto it = textures.find(name);
-        if (it != textures.end() && it->second->isNormalMap)
+        if (textures.find(name) == textures.end() || !textures[name]->srv)
         {
-            return it->second->srv;
+            std::cerr << "Texture not found or invalid: " << name << std::endl;
+            return nullptr;
         }
-
-        printf("Warning: Normal Map %s not found.\n", name.c_str());
-        return nullptr;
+        return textures[name]->srv;
     }
 
     ID3D11ShaderResourceView* findResourse(std::string name)
@@ -181,7 +141,6 @@ public:
         name = "Resources/" + name;
         return textures[name]->srv;
     }
-
 
   /* void unload(std::string name)
     {

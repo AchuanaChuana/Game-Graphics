@@ -6,7 +6,7 @@ cbuffer staticMeshBuffer
 
 struct VS_INPUT
 {
-	float4 Pos : POS;
+	float4 Pos : POSITION;
 	float3 Normal : NORMAL;
 	float3 Tangent : TANGENT;
 	float2 TexCoords : TEXCOORD;
@@ -19,7 +19,6 @@ struct PS_INPUT
 	float3 Tangent : TANGENT;
 	float2 TexCoords : TEXCOORD;
 };
-
 
 
 PS_INPUT VS(VS_INPUT input)

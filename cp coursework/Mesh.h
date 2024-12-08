@@ -7,7 +7,6 @@
 #include "Shader.h"
 #include "collision.h"
 
-
 struct STATIC_VERTEX
 {
 	Vec3 pos;
@@ -873,5 +872,102 @@ public:
 			shaders->updateTexturePS(core, "tex", textures.find(textureFilenames[i]));
 			geoset[i].draw(core);
 		}
+	}
+};
+
+class WaterPlane
+{
+public:
+	Mesh mesh;                      
+	float time = 0.0f;         
+	float waveAmplitude = 12.0f;     
+	float waveFrequency = 2.0f;     
+	float waveSpeed = 1.0f;  
+	int gridSize = 400;             
+
+	float scrollSpeedX = 0.008f; 
+	float scrollSpeedY = 0.005f;
+	std::string materialFilename;
+
+	STATIC_VERTEX addVertex(Vec3 p, Vec3 n, float tu, float tv)
+	{
+		STATIC_VERTEX v;
+		v.pos = p;
+		v.normal = n;
+		v.tangent = Vec3(0, 0, 0);
+		v.tu = tu;
+		v.tv = tv;
+		return v;
+	}
+
+	void init(DxCore* core, textureManager* textures, const std::string& materialPath, int gridSize = 10)
+	{
+		materialFilename = materialPath;
+		this->gridSize = gridSize;
+		std::vector<STATIC_VERTEX> vertices;
+		std::vector<unsigned int> indices;
+
+		float step = 2000.0f / gridSize; 
+		for (int z = 0; z <= gridSize; ++z)
+		{
+			for (int x = 0; x <= gridSize; ++x)
+			{
+				float posX = -1000.0f + x * step;
+				float posZ = -1000.0f + z * step;
+				vertices.push_back(addVertex(
+					Vec3(posX, 0, posZ),
+					Vec3(0, 1, 0),
+					x / (float)gridSize,
+					z / (float)gridSize));
+			}
+		}
+
+		for (int z = 0; z < gridSize; ++z)
+		{
+			for (int x = 0; x < gridSize; ++x)
+			{
+				int topLeft = z * (gridSize + 1) + x;
+				int topRight = topLeft + 1;
+				int bottomLeft = topLeft + (gridSize + 1);
+				int bottomRight = bottomLeft + 1;
+
+				indices.push_back(topLeft);
+				indices.push_back(bottomLeft);
+				indices.push_back(topRight);
+
+				indices.push_back(topRight);
+				indices.push_back(bottomLeft);
+				indices.push_back(bottomRight);
+			}
+		}
+		textures->load(core, materialFilename);
+		mesh.init(core, vertices, indices);
+	}
+
+	void update(float dt)
+	{
+		time += dt;
+	}
+
+	void draw(DxCore* core, Shaders* shader, textureManager textures, std::string filename,float tile,Matrix44 Worldpos, Matrix44 Transform)
+	{
+		shader->updateConstantVS("WaterParams", "time", &time);
+		shader->updateConstantVS("WaterParams", "waveAmplitude", &waveAmplitude);
+		shader->updateConstantVS("WaterParams", "waveFrequency", &waveFrequency);
+		shader->updateConstantVS("WaterParams", "waveSpeed", &waveSpeed);
+
+		shader->updateConstantVS("staticMeshBuffer", "W", &Worldpos);
+		shader->updateConstantVS("staticMeshBuffer", "VP", &Transform);
+
+		shader->updateConstantPS("ScrollParams", "time", &time);
+		shader->updateConstantPS("ScrollParams", "scrollSpeedX", &scrollSpeedX);
+		shader->updateConstantPS("ScrollParams", "scrollSpeedY", &scrollSpeedY);
+		shader->updateConstantPS("ScrollParams", "tileTime", &tile);
+
+
+		shader->updateTexturePS(core, "tex", textures.find(filename));
+		shader->apply(core);
+
+		mesh.draw(core);
 	}
 };

@@ -996,7 +996,6 @@ public:
 
 };
 
-
 class Quaternion
 {
 public:
