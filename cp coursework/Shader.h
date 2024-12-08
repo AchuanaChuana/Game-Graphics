@@ -166,6 +166,8 @@ public:
 		{
 			psConstantBuffers[i].upload(core);
 		}
+
+
 	}
 
 	void updateConstant(std::string constantBufferName, std::string variableName, void* data, std::vector<ConstantBuffer>& buffers)
@@ -192,6 +194,7 @@ public:
 
 	void updateTexturePS(DxCore* core, std::string name, ID3D11ShaderResourceView* srv)
 	{
+		auto it = textureBindPointsPS.find(name);
 		core->devicecontext->PSSetShaderResources(textureBindPointsPS[name], 1, &srv);
 	}
 };

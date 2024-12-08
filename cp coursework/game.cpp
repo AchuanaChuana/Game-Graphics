@@ -22,7 +22,8 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 	staticMesh flower;
 	Box box;
 	Sphere dome;
-	animatedMesh dinasour;
+	//animatedMesh dinasour;
+	drawDinosaur dina(3000.f,3000.f);
 	Snow snow;
 
 	FPCamera camera;
@@ -46,7 +47,8 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 	plane.init(&dx,&texman, std::string("Textures/snowbc.png"));
 	flower.loadMesh(&dx, "Resources/flower1.gem", &texman);
 	bamboo.loadMesh(&dx, "Resources/bamboo.gem",&texman);
-	dinasour.loadMesh(&dx, "Resources/TRex.gem", &texman);
+	//dinasour.loadMesh(&dx, "Resources/TRex.gem", &texman);
+	dina.loadMesh(&dx, "Resources/TRex.gem", &texman);
 	dome.init(&dx, &texman, std::string("Textures/HDRI/cloudyblue.png"), 30, 30, 30000);
 	box.init(&dx, &texman, std::string("Textures/grass.png"), 100.f, 800.f, 100.f);
 	snow.init(&dx, &texman, 4, 4, 20, 200);
@@ -73,7 +75,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 
 		float mouseX, mouseY;
 		checkMouse.getMouseMovement(mouseX, mouseY);
-		camera.processMouseInput(mouseX, mouseY,100.f, dt);
+		camera.processMouseInput(mouseX, mouseY,20.f, dt);
 		camera.updateCameraDirection();
 		camera.moveForward(700.f, dt);
 		camera.moveBackward(500.f, dt);
@@ -90,8 +92,9 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 		plane.draw(&dx, &shaderS,texman, "Textures/snowbc.png", defaultMatrix, together);
 		bamboo.drawManyRand(&dx, &shaderop, texman, together, bambooPos);
 		flower.drawManyRand(&dx, &shaderop, texman, together, flowerPos);
-		//dinasour.draw(&shaderA, &dx, dt, texman, biggerDefault, together);
-		dinasour.t += dt;
+		//dinasour.draw(&shaderA, &dx, dt, texman, "walk", biggerDefault, together);
+		//dinasour.t += dt;
+		dina.draw(&shaderA, &dx, dt, texman, together);
 		//box.draw(&dx, &shaderS, texman, "Textures/grass.png", defaultMatrix, together);
 		snow.drawManyRand(&dx, &shadernoTex,  together);
 		dome.draw(&dx, &shaderS, texman,"Textures/HDRI/cloudyblue.png", defaultMatrix, together);

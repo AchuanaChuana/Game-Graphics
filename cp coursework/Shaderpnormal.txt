@@ -1,0 +1,46 @@
+Texture2D tex : register(t0);            // 颜色纹理
+Texture2D normalMap : register(t1);      // 法线贴图
+SamplerState samplerLinear : register(s0); // 采样器
+
+struct PS_INPUT
+{
+    float4 Pos : SV_POSITION;  // 裁剪空间位置
+    float3 Normal : NORMAL;    // 顶点法线
+    float3 Tangent : TANGENT;  // 顶点切线
+    float2 TexCoords : TEXCOORD; // 纹理坐标
+};
+
+float4 PS(PS_INPUT input) : SV_Target0
+{
+    // 从颜色纹理采样颜色
+    float4 colour = tex.Sample(samplerLinear, input.TexCoords);
+
+    // 计算副切线
+    float3 bitangent = cross(input.Normal, input.Tangent);
+
+    // 构造 TBN 矩阵
+    float3x3 TBN = float3x3(
+        normalize(input.Tangent), 
+        normalize(bitangent), 
+        normalize(input.Normal)
+    );
+
+    // 从法线贴图中采样法线
+    float3 normalTex = normalMap.Sample(samplerLinear, input.TexCoords).xyz;
+
+    // 将法线从 [0, 1] 转换到 [-1, 1]
+    normalTex = normalize(normalTex * 2.0f - 1.0f);
+
+    // 将切线空间的法线转换到世界空间
+    float3 worldNormal = normalize(mul(TBN, normalTex));
+
+    // 示例光照（以方向光为例）
+    float3 lightDir = normalize(float3(-0.5, -1.0, -0.5)); // 光线方向
+    float lightIntensity = saturate(dot(worldNormal, -lightDir));
+
+    // 叠加光照效果
+    float3 finalColor = colour.rgb * lightIntensity;
+
+    return float4(finalColor, 1.0); // 返回最终颜色
+}
+

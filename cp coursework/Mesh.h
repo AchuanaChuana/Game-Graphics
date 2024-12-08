@@ -391,14 +391,13 @@ void draw(DxCore* core,Shaders* shader, textureManager textures, std::string fil
 
 class Snow {
 public:
-	std::vector<Mesh> snowset;                 // 雪花网格集合
-	std::vector<Matrix44> activePositions;    // 当前活跃雪花位置
-	std::string materialFilename;             // 材质文件路径
-	textureManager* textures;                 // 纹理管理器指针
+	std::vector<Mesh> snowset;                
+	std::vector<Matrix44> activePositions;    
+	std::string materialFilename;          
+	textureManager* textures;                
 
-	float snowSpeed = 120.0f;                  // 雪花下降速度
+	float snowSpeed = 120.0f;               
 
-	// 添加顶点的工具函数
 	STATIC_VERTEX addVertex(Vec3 p, Vec3 n, float tu, float tv) {
 		STATIC_VERTEX v;
 		v.pos = p;
@@ -409,7 +408,6 @@ public:
 		return v;
 	}
 
-	// 初始化单个雪花网格
 	void initSingleSnowflake(Mesh& mesh, DxCore* core, int rings, int segments, float radius) {
 		std::vector<STATIC_VERTEX> vertices;
 		std::vector<unsigned int> indices;
@@ -449,28 +447,24 @@ public:
 		mesh.init(core, vertices, indices);
 	}
 
-	// 初始化雪花系统
 	void init(DxCore* core, textureManager* textureManager, int rings, int segments, float radius, int instanceCount) {
 		textures = textureManager;
 
-		// 初始化单个雪花网格
 		Mesh snowflakeMesh;
 		initSingleSnowflake(snowflakeMesh, core, rings, segments, radius);
 		snowset.push_back(snowflakeMesh);
 
-		// 初始化活跃雪花位置，设置随机高度范围 [500, 1000]
 		for (int i = 0; i < instanceCount; i++) {
 			activePositions.push_back(generateRandomPosition(2000.0f, 500.0f, 3000.0f, 2000.0f, Vec3(0.5f, 0.5f, 0.5f)));
 		}
 	}
 
-	// 生成单个随机位置
 	Matrix44 generateRandomPosition(float rangeX, float minY, float maxY, float rangeZ, Vec3 scale) {
 		Matrix44 randomPos;
 
-		randomPos.a[0][3] = static_cast<float>((rand() % static_cast<int>(rangeX * 2)) - rangeX); // 随机X位置
-		randomPos.a[1][3] = static_cast<float>((rand() % static_cast<int>(maxY - minY)) + minY);  // 随机高度
-		randomPos.a[2][3] = static_cast<float>((rand() % static_cast<int>(rangeZ * 2)) - rangeZ); // 随机Z位置
+		randomPos.a[0][3] = static_cast<float>((rand() % static_cast<int>(rangeX * 2)) - rangeX);
+		randomPos.a[1][3] = static_cast<float>((rand() % static_cast<int>(maxY - minY)) + minY); 
+		randomPos.a[2][3] = static_cast<float>((rand() % static_cast<int>(rangeZ * 2)) - rangeZ);
 
 		randomPos.a[0][0] = scale.x;
 		randomPos.a[1][1] = scale.y;
@@ -479,20 +473,18 @@ public:
 		return randomPos;
 	}
 
-	// 更新雪花位置
-	void update(float deltaTime) {
-		for (int i = 0; i < activePositions.size(); i++) {
-			// 雪花下降
+	void update(float deltaTime) 
+	{
+		for (int i = 0; i < activePositions.size(); i++)
+		{
 			activePositions[i].a[1][3] -= snowSpeed * deltaTime;
 
-			// 如果雪花落到 Y < -30，则重新生成
 			if (activePositions[i].a[1][3] < -10.0f) {
 				activePositions[i] = generateRandomPosition(2000.0f, 2000.0f, 3000.0f, 2000.0f, Vec3(0.5f, 0.5f, 0.5f));
 			}
 		}
 	}
 
-	// 批量绘制雪花
 	void drawManyRand(DxCore* core, Shaders* shader, Matrix44 Transform) {
 		for (const auto& Wpos : activePositions) {
 			shader->updateConstantVS("staticMeshBuffer", "W", const_cast<void*>(reinterpret_cast<const void*>(&Wpos)));
@@ -778,13 +770,104 @@ public:
 		instance.animation = &animation1;
 	}
 
-	void draw(Shaders* shaders, DxCore* core, float dt, textureManager textures, Matrix44 Worldpos, Matrix44 Transform)
+	void draw(Shaders* shaders, DxCore* core, float dt, textureManager textures, std::string animename, Matrix44 Worldpos, Matrix44 Transform)
 	{
-		instance.update("Run", dt);
+		instance.update(animename, dt);
 		shaders->updateConstantVS( "animatedMeshBuffer", "W", &Worldpos);
 		shaders->updateConstantVS( "animatedMeshBuffer", "VP", &Transform);
 		shaders->updateConstantVS( "animatedMeshBuffer", "bones", instance.matrices);
 		shaders->apply(core);
+		for (int i = 0; i < geoset.size(); i++)
+		{
+			shaders->updateTexturePS(core, "tex", textures.find(textureFilenames[i]));
+			geoset[i].draw(core);
+		}
+	}
+};
+
+class drawDinosaur : public animatedMesh
+{
+public:
+	Vec3 position;      
+	Vec3 target;        
+	Vec3 forward;
+	float speed = 300.0f; 
+	float moveWidth;   
+	float moveHeight;  
+	float waitTimer = 0.0f; 
+	bool isWaiting = false; 
+
+	drawDinosaur(float sceneWidth, float sceneHeight): moveWidth(sceneWidth), moveHeight(sceneHeight)
+	{
+		position = Vec3(0.0f, 0.0f, 0.0f); 
+		forward = Vec3(0.0f, 0.0f, 1.0f);
+		generateRandomTarget();           
+	}
+
+	void generateRandomTarget()
+	{
+		float x = static_cast<float>(rand()) / RAND_MAX * moveWidth - moveWidth / 2.0f;
+		float z = static_cast<float>(rand()) / RAND_MAX * moveHeight - moveHeight / 2.0f;
+		target = Vec3(x, position.y, z); 
+	}
+
+	void updatePosition(float dt)
+	{
+		if (isWaiting) 
+		{
+			waitTimer += dt;
+			if (waitTimer >= 3.0f) 
+			{ 
+				isWaiting = false;
+				waitTimer = 0.0f;
+				generateRandomTarget();
+			}
+			return;
+		}
+
+		Vec3 direction = target - position;
+		float distance = direction.Length();
+		Vec3 directionNor = direction / distance;
+
+		if (distance > speed * dt)
+		{
+			position += directionNor * speed * dt;
+			forward = directionNor; 
+		}
+		else
+		{
+			position = target;
+			isWaiting = true;
+		}
+	}
+
+	void draw(Shaders* shaders, DxCore* core, float dt, textureManager& textures, Matrix44 Transform)
+	{
+		updatePosition(dt); 
+
+		std::string currentAnimation = (target - position).Length() > 0.1f ? "walk" : "idle2";
+		instance.update(currentAnimation, dt);
+
+		Vec3 up = Vec3(0.0f, 1.0f, 0.0f); 
+		Vec3 right = up.Cross(forward).Normalize(); 
+		Vec3 adjustedUp = forward.Cross(right).Normalize(); 
+    	Matrix44 rotationMatrix
+		(
+			right.x, right.y, right.z, 0.0f,
+			adjustedUp.x, adjustedUp.y, adjustedUp.z, 0.0f,
+			forward.x, forward.y, forward.z, 0.0f,
+			0.0f, 0.0f, 0.0f, 1.0f
+		);
+
+		Matrix44 Worldpos = Matrix44::translation(position);
+		Matrix44 scaleMatrix = Matrix44::scaling(Vec3(100, 100, 100)); 
+		Matrix44 biggerDefault = scaleMatrix * rotationMatrix *Worldpos;
+
+		shaders->updateConstantVS("animatedMeshBuffer", "W", &biggerDefault);
+		shaders->updateConstantVS("animatedMeshBuffer", "VP", &Transform);
+		shaders->updateConstantVS("animatedMeshBuffer", "bones", instance.matrices);
+		shaders->apply(core);
+
 		for (int i = 0; i < geoset.size(); i++)
 		{
 			shaders->updateTexturePS(core, "tex", textures.find(textureFilenames[i]));

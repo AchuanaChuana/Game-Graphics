@@ -35,6 +35,8 @@ class Texture
     ID3D11Texture2D* texture;
     ID3D11ShaderResourceView* srv;
     sampler sam;
+    bool isNormalMap;
+
     void init(DxCore* core,float width, float height, int channels, unsigned char* data,DXGI_FORMAT format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB)
     {
         D3D11_TEXTURE2D_DESC texDesc;
@@ -102,96 +104,29 @@ class Texture
 
     void loadNormalMap(DxCore* core, std::string filename)
     {
-        int width = 0;
-        int height = 0;
-        int channels = 0;
+        int width = 0, height = 0, channels = 0;
         unsigned char* texels = stbi_load(filename.c_str(), &width, &height, &channels, 0);
         if (!texels)
         {
             throw std::runtime_error("Failed to load normal map: " + filename);
         }
 
-        // Ensure normal map has 3 or 4 channels
+        // 法线贴图格式为 RGBA，确保有 4 个通道
         if (channels < 3)
         {
+            stbi_image_free(texels);
             throw std::runtime_error("Invalid normal map format: " + filename);
         }
 
-        // Optionally normalize the normals here if needed (convert to a usable range)
+        // 标记为法线贴图
+        isNormalMap = true;
 
+        // 使用 DXGI_FORMAT_R8G8B8A8_UNORM 处理法线贴图
         init(core, width, height, channels, texels, DXGI_FORMAT_R8G8B8A8_UNORM);
         stbi_image_free(texels);
+        sam.init(core);
     }
 };
-
-
-//struct TilingFactor
-//{
-//    float x;
-//    float y;
-//
-//    TilingFactor(float x = 1.0f, float y = 1.0f) : x(x), y(y) {}
-//};
-//
-//class TilingBuffer
-//{
-//public:
-//    ID3D11Buffer* buffer;
-//
-//    void init(DxCore* core)
-//    {
-//        // Create a constant buffer for tiling factors
-//        D3D11_BUFFER_DESC cbDesc;
-//        ZeroMemory(&cbDesc, sizeof(cbDesc));
-//        cbDesc.Usage = D3D11_USAGE_DEFAULT;
-//        cbDesc.ByteWidth = sizeof(TilingFactor); // Size of the custom structure
-//        cbDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-//        cbDesc.CPUAccessFlags = 0;
-//
-//        HRESULT hr = core->device->CreateBuffer(&cbDesc, nullptr, &buffer);
-//        if (FAILED(hr))
-//        {
-//            throw std::runtime_error("Failed to create tiling buffer");
-//        }
-//    }
-//
-//    void setTilingFactor(DxCore* core, float tilingX, float tilingY)
-//    {
-//        if (!buffer)
-//        {
-//            std::cerr << "Error: Tiling buffer is not initialized!" << std::endl;
-//            throw std::runtime_error("Tiling buffer is not initialized.");
-//        }
-//
-//        if (!core->devicecontext)
-//        {
-//            std::cerr << "Error: Device context is not initialized!" << std::endl;
-//            throw std::runtime_error("Device context is not initialized.");
-//        }
-//
-//        if (!buffer)
-//        {
-//            std::cerr << "Error: Tiling buffer is not initialized!" << std::endl;
-//            throw std::runtime_error("Tiling buffer is not initialized.");
-//        }
-//
-//        TilingFactor tilingFactor(tilingX, tilingY);
-//        core->devicecontext->UpdateSubresource(buffer, 0, nullptr, &tilingFactor, 0, 0);
-//    }
-//
-//    void bind(DxCore* core)
-//    {
-//        core->devicecontext->PSSetConstantBuffers(0, 1, &buffer);
-//    }
-//
-//    ~TilingBuffer()
-//    {
-//        if (buffer)
-//        {
-//            buffer->Release();
-//        }
-//    }
-//};
 
 class textureManager
 {
@@ -229,28 +164,24 @@ public:
         return textures[name]->srv;
     }
 
+    ID3D11ShaderResourceView* findNormalMap(const std::string& name)
+    {
+        auto it = textures.find(name);
+        if (it != textures.end() && it->second->isNormalMap)
+        {
+            return it->second->srv;
+        }
+
+        printf("Warning: Normal Map %s not found.\n", name.c_str());
+        return nullptr;
+    }
+
     ID3D11ShaderResourceView* findResourse(std::string name)
     {
         name = "Resources/" + name;
         return textures[name]->srv;
     }
 
-    //void bindTexture(DxCore* core, Shaders* shaders, std::string textureName, float tilingX, float tilingY)
-    //{
-    //    // Find the texture
-    //    ID3D11ShaderResourceView* texture = find(textureName);
-    //    if (!texture)
-    //    {
-    //        throw std::runtime_error("Texture not found: " + textureName);
-    //    }
-
-    //    // Set the tiling factor
-    //    tilingBuffer.setTilingFactor(core, tilingX, tilingY);
-
-    //    // Bind the tiling buffer and texture
-    //    tilingBuffer.bind(core);
-    //    core->devicecontext->PSSetShaderResources(0, 1, &texture);
-    //}
 
   /* void unload(std::string name)
     {
