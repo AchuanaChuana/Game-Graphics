@@ -165,13 +165,16 @@ public:
 		textures->load(core, materialFilename);
 	}
 
-	void draw(DxCore* core, Shaders* shader, textureManager textures, std:: string filename,Matrix44 Worldpos, Matrix44 Transform)
+	void draw(DxCore* core, Shaders* shader, textureManager textures, float tile,std:: string filename,Matrix44 Worldpos, Matrix44 Transform)
 	{
 		shader->updateConstantVS("staticMeshBuffer", "W", &Worldpos);
 		shader->updateConstantVS("staticMeshBuffer", "VP", &Transform);
+
+		shader->updateConstantPS("ScrollParams", "tileTime", &tile);
 		shader->apply(core);
+
 		shader->updateTexturePS(core, "tex", textures.find(filename));
-	
+
 		mesh.draw(core);
 	}
 };
@@ -502,6 +505,7 @@ class staticMesh
 public:
 	std::vector<Mesh> geoset;
 	std::vector<std::string> textureFilenames;
+	std::vector<std::string> normalFilenames;
 	//std::vector<AABB> aabbList;
 
 	void loadMesh(DxCore* core, std::string filename,  textureManager* textures)
@@ -525,11 +529,19 @@ public:
 				//aabb.expand(pos);
 			}
 
-			textureFilenames.push_back(gemmeshes[i].material.find("diffuse").getValue());
-			textures->load(core, gemmeshes[i].material.find("diffuse").getValue());
+			std::string diffuse = gemmeshes[i].material.find("diffuse").getValue();
+			textureFilenames.push_back(diffuse);
+			textures->load(core, diffuse);
+
+			std::string normal = gemmeshes[i].material.find("normal").getValue();
+			normalFilenames.push_back(normal);
+			textures->load(core, normal);
+
 			geo.init(core,vertices, gemmeshes[i].indices);
 			geoset.push_back(geo);
 			//aabbList.push_back(aabb);
+
+
 		}
 	}
 
@@ -541,6 +553,7 @@ public:
 		for(int i = 0; i < geoset.size();i++)
 		{
 			shader->updateTexturePS(core, "tex", textures.find(textureFilenames[i]));
+			shader->updateTexturePS(core, "normalMap", textures.find(normalFilenames[i]));
 		    geoset[i].draw(core);
 		}
 	}
@@ -576,6 +589,7 @@ public:
 			for (int j = 0; j < geoset.size(); j++)
 			{
 				shader->updateTexturePS(core, "tex", textures.find(textureFilenames[j]));
+				shader->updateTexturePS(core, "normalMap", textures.find(normalFilenames[j]));
 				geoset[j].draw(core);
 			}
 		}
@@ -712,6 +726,7 @@ public:
 	AnimationInstance instance;
 	Animation animation1;
 	std::vector<std::string> textureFilenames;
+	std::vector<std::string> normalFilenames;
 	float t = 0.f;
 
 	void loadMesh(DxCore* core, std::string filename, textureManager* textures)
@@ -730,9 +745,15 @@ public:
 				vertices.push_back(v);
 			}
 			geo.initAnimated(core, vertices, gemmeshes[i].indices);
-			textureFilenames.push_back(gemmeshes[i].material.find("diffuse").getValue());
-			textures->load(core, gemmeshes[i].material.find("diffuse").getValue());
-			// Load texture with filename: gemmeshes[i].material.find("diffuse").getValue()
+
+			std::string diffuse = gemmeshes[i].material.find("diffuse").getValue();
+			textureFilenames.push_back(diffuse);
+			textures->load(core, diffuse);
+
+			std::string normal = gemmeshes[i].material.find("normal").getValue();
+			normalFilenames.push_back(normal);
+			textures->load(core, normal);
+	
 			geoset.push_back(geo);
 		}
 		for (int i = 0; i < gemanimation.bones.size(); i++)
@@ -779,6 +800,7 @@ public:
 		for (int i = 0; i < geoset.size(); i++)
 		{
 			shaders->updateTexturePS(core, "tex", textures.find(textureFilenames[i]));
+			shaders->updateTexturePS(core, "normalMap", textures.find(normalFilenames[i]));
 			geoset[i].draw(core);
 		}
 	}
@@ -870,6 +892,7 @@ public:
 		for (int i = 0; i < geoset.size(); i++)
 		{
 			shaders->updateTexturePS(core, "tex", textures.find(textureFilenames[i]));
+			shaders->updateTexturePS(core, "normalMap", textures.find(normalFilenames[i]));
 			geoset[i].draw(core);
 		}
 	}

@@ -13,17 +13,19 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 
 	Shaders shaderS;
 	Shaders shaderA;
+	Shaders shaderAnor;
 	Shaders shadernoTex;
 	Shaders shaderop;
+	Shaders shaderopnor;
 	Shaders shaderstyle;
 	Shaders shaderwater;
+	Shaders shadertile;
 
 	planewithTex plane;
 	staticMesh bamboo;
 	staticMesh flower;
 	Box box;
 	Sphere dome;
-	//animatedMesh dinasour;
 	drawDinosaur dina(3000.f,3000.f);
 	Snow snow;
 	WaterPlane water;
@@ -41,15 +43,17 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 	dx.Init(1024, 768, win.hwnd, false);
 	
 	shaderop.initStatic("Shaderv.txt", "Shaderpop.txt", &dx);
+	shaderopnor.initStatic("Shaderv.txt", "Shaderpopnormal.txt", &dx);
 	shaderS.initStatic("Shaderv.txt", "Shaderp2.txt", &dx);
 	shaderA.initAnimated("Shadervmove.txt", "Shaderp2.txt", &dx);
+	shaderAnor.initAnimated("Shadervmove.txt", "Shaderpopnormal.txt", &dx);
 	shadernoTex.initStatic("Shaderv.txt", "Shaderp.txt", &dx);
 	shaderwater.initStatic("Shadervwater.txt", "Shaderpwater.txt", &dx);
+	shadertile.initStatic("Shaderv.txt", "Shaderptile.txt", &dx);
 
 	plane.init(&dx,&texman, std::string("Textures/snowbc.png"));
 	flower.loadMesh(&dx, "Resources/flower1.gem", &texman);
 	bamboo.loadMesh(&dx, "Resources/bamboo.gem",&texman);
-	//dinasour.loadMesh(&dx, "Resources/TRex.gem", &texman);
 	dina.loadMesh(&dx, "Resources/TRex.gem", &texman);
 	dome.init(&dx, &texman, std::string("Textures/HDRI/cloudyblue.png"), 30, 30, 30000);
 	box.init(&dx, &texman, std::string("Textures/grass.png"), 100.f, 800.f, 100.f);
@@ -92,12 +96,10 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 		snow.update(dt);
 		water.update(dt);
 	
-		plane.draw(&dx, &shaderS,texman, "Textures/snowbc.png", defaultMatrix, together);
-		bamboo.drawManyRand(&dx, &shaderop, texman, together, bambooPos);
-		flower.drawManyRand(&dx, &shaderop, texman, together, flowerPos);
-		//dinasour.draw(&shaderA, &dx, dt, texman, "walk", biggerDefault, together);
-		//dinasour.t += dt;
-		dina.draw(&shaderA, &dx, dt, texman, together);
+		plane.draw(&dx, &shadertile,texman,20.f, "Textures/snowbc.png", defaultMatrix, together);
+		bamboo.drawManyRand(&dx, &shaderopnor, texman, together, bambooPos);
+		flower.drawManyRand(&dx, &shaderopnor, texman, together, flowerPos);
+		dina.draw(&shaderAnor, &dx, dt, texman, together);
 		//box.draw(&dx, &shaderS, texman, "Textures/grass.png", defaultMatrix, together);
 		snow.drawManyRand(&dx, &shadernoTex,  together);
 		dome.draw(&dx, &shaderS, texman,"Textures/HDRI/cloudyblue.png", defaultMatrix, together);

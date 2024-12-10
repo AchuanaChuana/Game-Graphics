@@ -95,6 +95,11 @@ class Texture
         sam.init(core);
 	}
 
+    void loadNormal(DxCore* core, std::string filename)
+    {
+        load(core, filename);
+    }
+
    /* void free()
     {
         srv->Release();
@@ -117,6 +122,18 @@ public:
         }
         Texture* texture = new Texture();
         texture->load(core, filename);
+        textures.insert({ filename, texture });
+    }
+
+    void loadNormal(DxCore* core, std::string filename)
+    {
+        if (textures.find(filename) != textures.end())
+        {
+            return;
+        }
+
+        Texture* texture = new Texture();
+        texture->loadNormal(core, filename);
         textures.insert({ filename, texture });
     }
 
