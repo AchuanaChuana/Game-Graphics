@@ -25,6 +25,7 @@ public:
         samplerDesc.MinLOD = 0;
         samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
         core->device->CreateSamplerState(&samplerDesc, &state);
+        core->devicecontext->PSSetSamplers(0, 1, &state);
     }
 
 };

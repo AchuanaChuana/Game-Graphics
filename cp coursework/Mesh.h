@@ -923,7 +923,7 @@ public:
 		return v;
 	}
 
-	void init(DxCore* core, textureManager* textures, const std::string& materialPath, int gridSize = 10)
+	void init(DxCore* core, textureManager* textures, const std::string& materialPath, int gridSize)
 	{
 		materialFilename = materialPath;
 		this->gridSize = gridSize;

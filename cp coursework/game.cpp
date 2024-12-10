@@ -58,7 +58,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 	dome.init(&dx, &texman, std::string("Textures/HDRI/cloudyblue.png"), 30, 30, 30000);
 	box.init(&dx, &texman, std::string("Textures/grass.png"), 100.f, 800.f, 100.f);
 	snow.init(&dx, &texman, 4, 4, 20, 200);
-	water.init(&dx, &texman, std::string("Textures/water.png"));
+	water.init(&dx, &texman, std::string("Textures/water.png"),30);
 
 	float t = 0.f;
 	
