@@ -20,11 +20,15 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 	Shaders shaderstyle;
 	Shaders shaderwater;
 	Shaders shadertile;
+	Shaders shaderswing;
 
 	planewithTex plane;
+	planewithTex pondground;
 	staticMesh bamboo;
+	DrawBamboo bambooo;
 	staticMesh flower;
 	Box box;
+	Box box2;
 	Sphere dome;
 	drawDinosaur dina(3000.f,3000.f);
 	Snow snow;
@@ -50,15 +54,19 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 	shadernoTex.initStatic("Shaderv.txt", "Shaderp.txt", &dx);
 	shaderwater.initStatic("Shadervwater.txt", "Shaderpwater.txt", &dx);
 	shadertile.initStatic("Shaderv.txt", "Shaderptile.txt", &dx);
+	shaderswing.initStatic("ShadervSwing.txt", "Shaderpopnormal.txt", &dx);
 
-	plane.init(&dx,&texman, std::string("Textures/snowbc.png"));
+	plane.init(&dx,&texman, std::string("Textures/snowbc.png"),10000.f);
+	pondground.init(&dx, &texman, std::string("Textures/pondbc.png"),2000.f);
 	flower.loadMesh(&dx, "Resources/flower1.gem", &texman);
 	bamboo.loadMesh(&dx, "Resources/bamboo.gem",&texman);
+	bambooo.loadMesh(&dx, "Resources/bamboo.gem", &texman);
 	dina.loadMesh(&dx, "Resources/TRex.gem", &texman);
 	dome.init(&dx, &texman, std::string("Textures/HDRI/cloudyblue.png"), 30, 30, 30000);
-	box.init(&dx, &texman, std::string("Textures/grass.png"), 100.f, 800.f, 100.f);
+	box.init(&dx, &texman, std::string("Textures/wood.png"), 2030.f, 120.f, 30.f);
+	box2.init(&dx, &texman, std::string("Textures/wood.png"), 30.f, 120.f, 2030.f);
 	snow.init(&dx, &texman, 4, 4, 20, 200);
-	water.init(&dx, &texman, std::string("Textures/water.png"),30);
+	water.init(&dx, &texman, std::string("Textures/water.png"),80);
 
 	float t = 0.f;
 	
@@ -73,6 +81,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 
 	vector<Matrix44> bambooPos = bamboo.generateRandomPositions(30, 3000, 1, 3000, Vec3(3,3,3));
 	vector<Matrix44> flowerPos = flower.generateRandomPositions(100, 3000, 1, 3000, Vec3(1, 1, 1));
+	vector<Matrix44> bamboooPos = bambooo.generateRandomPositions(30, 3000, 1, 3000, Vec3(3, 3, 3));
 
 	while (true)
 	{
@@ -95,15 +104,22 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 		dx.clear(); 
 		snow.update(dt);
 		water.update(dt);
+		bambooo.update(dt);
 	
 		plane.draw(&dx, &shadertile,texman,20.f, "Textures/snowbc.png", defaultMatrix, together);
-		bamboo.drawManyRand(&dx, &shaderopnor, texman, together, bambooPos);
+		//pondground.draw(&dx, &shadertile, texman, 4.f, "Textures/pondbc.png", defaultMatrix.translation(Vec3(0, 5, 0)), together);
+		//bamboo.drawManyRand(&dx, &shaderopnor, texman, together, bambooPos);
+		bambooo.drawb(&dx, &shaderswing, texman, defaultMatrix, together);
+		bambooo.drawManyRandb(&dx, &shaderswing, texman, together, bamboooPos);
 		flower.drawManyRand(&dx, &shaderopnor, texman, together, flowerPos);
-		dina.draw(&shaderAnor, &dx, dt, texman, together);
-		//box.draw(&dx, &shaderS, texman, "Textures/grass.png", defaultMatrix, together);
+		dina.draw(&shaderA, &dx, dt, texman, together);
+		box.draw(&dx, &shaderS, texman, "Textures/wood.png", defaultMatrix.translation(Vec3(0, 0, 1000)), together);
+		box.draw(&dx, &shaderS, texman, "Textures/wood.png", defaultMatrix.translation(Vec3(0, 0, -1000)), together);
+		box2.draw(&dx, &shaderS, texman, "Textures/wood.png", defaultMatrix.translation(Vec3(1000, 0, 0)), together);
+		box2.draw(&dx, &shaderS, texman, "Textures/wood.png", defaultMatrix.translation(Vec3(-1000, 0, 0)), together);
 		snow.drawManyRand(&dx, &shadernoTex,  together);
 		dome.draw(&dx, &shaderS, texman,"Textures/HDRI/cloudyblue.png", defaultMatrix, together);
-		water.draw(&dx, &shaderwater,texman,"Textures/water.png", 1.0f,defaultMatrix.translation(Vec3(0,20,0)), together);
+		water.draw(&dx, &shaderwater,texman,"Textures/water.png", 1.0f,defaultMatrix.translation(Vec3(0,25,0)), together);
 
 		if (check.keyPressed(VK_ESCAPE))  break;  
 		dx.present();

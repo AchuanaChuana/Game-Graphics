@@ -150,14 +150,14 @@ public:
 		return v;
 	}
 
-	void init(DxCore* core, textureManager* textures, const std::string& materialPath)
+	void init(DxCore* core, textureManager* textures, const std::string& materialPath,float size)
 	{
 		materialFilename = materialPath;
 		std::vector<STATIC_VERTEX> vertices;
-		vertices.push_back(addVertex(Vec3(-5000, 0, -5000), Vec3(0, 1, 0), 0, 0));
-		vertices.push_back(addVertex(Vec3(5000, 0, -5000), Vec3(0, 1, 0), 1, 0));
-		vertices.push_back(addVertex(Vec3(-5000, 0, 5000), Vec3(0, 1, 0), 0, 1));
-		vertices.push_back(addVertex(Vec3(5000, 0, 5000), Vec3(0, 1, 0), 1, 1));
+		vertices.push_back(addVertex(Vec3(-size/2, 0, -size / 2), Vec3(0, 1, 0), 0, 0));
+		vertices.push_back(addVertex(Vec3(size / 2, 0, -size / 2), Vec3(0, 1, 0), 1, 0));
+		vertices.push_back(addVertex(Vec3(-size / 2, 0, size / 2), Vec3(0, 1, 0), 0, 1));
+		vertices.push_back(addVertex(Vec3(size / 2, 0, size / 2), Vec3(0, 1, 0), 1, 1));
 		std::vector<unsigned int> indices;
 		indices.push_back(2); indices.push_back(1); indices.push_back(0);
 		indices.push_back(1); indices.push_back(2); indices.push_back(3);
@@ -506,7 +506,6 @@ public:
 	std::vector<Mesh> geoset;
 	std::vector<std::string> textureFilenames;
 	std::vector<std::string> normalFilenames;
-	//std::vector<AABB> aabbList;
 
 	void loadMesh(DxCore* core, std::string filename,  textureManager* textures)
 	{
@@ -540,8 +539,6 @@ public:
 			geo.init(core,vertices, gemmeshes[i].indices);
 			geoset.push_back(geo);
 			//aabbList.push_back(aabb);
-
-
 		}
 	}
 
@@ -580,6 +577,60 @@ public:
 
 	void drawManyRand(DxCore* core, Shaders* shader, textureManager& textures, Matrix44 Transform, const std::vector<Matrix44>& Wpositions)
 	{
+		for (int i = 0; i < Wpositions.size(); i++)
+		{
+			shader->updateConstantVS("staticMeshBuffer", "W", const_cast<void*>(reinterpret_cast<const void*>(&Wpositions[i])));
+			shader->updateConstantVS("staticMeshBuffer", "VP", &Transform);
+			shader->apply(core);
+
+			for (int j = 0; j < geoset.size(); j++)
+			{
+				shader->updateTexturePS(core, "tex", textures.find(textureFilenames[j]));
+				shader->updateTexturePS(core, "normalMap", textures.find(normalFilenames[j]));
+				geoset[j].draw(core);
+			}
+		}
+	}
+};
+
+class DrawBamboo : public staticMesh
+{
+public:
+	float time = 0.0f;
+	float maxHeight = 180.0f;      
+	float intensity = 0.004f;   
+	float frequency = 1.3f;     
+
+	void update(float deltaTime)
+	{
+		time += deltaTime;
+	}
+
+	void drawb(DxCore* core, Shaders* shader, textureManager textures, Matrix44 Worldpos, Matrix44 Transform)
+	{
+		shader->updateConstantVS("WaveParams", "time", &time);
+		shader->updateConstantVS("WaveParams", "maxHeight", &maxHeight);
+		shader->updateConstantVS("WaveParams", "intensity", &intensity);
+		shader->updateConstantVS("WaveParams", "frequency", &frequency);
+		shader->updateConstantVS("staticMeshBuffer", "W", &Worldpos);
+		shader->updateConstantVS("staticMeshBuffer", "VP", &Transform);
+		shader->apply(core);
+
+		for (int i = 0; i < geoset.size(); i++)
+		{
+			shader->updateTexturePS(core, "tex", textures.find(textureFilenames[i]));
+			shader->updateTexturePS(core, "normalMap", textures.find(normalFilenames[i]));
+			geoset[i].draw(core);
+		}
+	}
+
+	void drawManyRandb(DxCore* core, Shaders* shader, textureManager& textures, Matrix44 Transform, const std::vector<Matrix44>& Wpositions)
+	{
+		shader->updateConstantVS("WaveParams", "time", &time);
+		shader->updateConstantVS("WaveParams", "maxHeight", &maxHeight);
+		shader->updateConstantVS("WaveParams", "intensity", &intensity);
+		shader->updateConstantVS("WaveParams", "frequency", &frequency);
+
 		for (int i = 0; i < Wpositions.size(); i++)
 		{
 			shader->updateConstantVS("staticMeshBuffer", "W", const_cast<void*>(reinterpret_cast<const void*>(&Wpositions[i])));
@@ -892,7 +943,6 @@ public:
 		for (int i = 0; i < geoset.size(); i++)
 		{
 			shaders->updateTexturePS(core, "tex", textures.find(textureFilenames[i]));
-			shaders->updateTexturePS(core, "normalMap", textures.find(normalFilenames[i]));
 			geoset[i].draw(core);
 		}
 	}
@@ -906,7 +956,8 @@ public:
 	float waveAmplitude = 12.0f;     
 	float waveFrequency = 2.0f;     
 	float waveSpeed = 1.0f;  
-	int gridSize = 400;             
+	int gridSize;           
+	float transparency = 0.6f;
 
 	float scrollSpeedX = 0.008f; 
 	float scrollSpeedY = 0.005f;
@@ -986,6 +1037,7 @@ public:
 		shader->updateConstantPS("ScrollParams", "scrollSpeedX", &scrollSpeedX);
 		shader->updateConstantPS("ScrollParams", "scrollSpeedY", &scrollSpeedY);
 		shader->updateConstantPS("ScrollParams", "tileTime", &tile);
+		shader->updateConstantPS("ScrollParams", "transparency", &transparency);
 
 
 		shader->updateTexturePS(core, "tex", textures.find(filename));

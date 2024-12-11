@@ -7,6 +7,7 @@ cbuffer ScrollParams
     float scrollSpeedX; 
     float scrollSpeedY; 
     float tileTime;
+    float transparency; 
 };
 
 struct PS_INPUT
@@ -19,16 +20,14 @@ struct PS_INPUT
 
 float4 PS(PS_INPUT input) : SV_Target0
 {
-    // Calculate scrolling offsets
     float2 scrollOffset = float2(scrollSpeedX * time, scrollSpeedY * time);
 
-    // Apply scrolling to texture coordinates
     float2 scaledTexCoords = input.TexCoords * tileTime;
     float2 scrolledTexCoords = frac(scaledTexCoords + scrollOffset);
 
-    // Sample the texture using the scrolled coordinates
     float4 colour = tex.Sample(samplerLinear, scrolledTexCoords);
 
-    // Return the sampled color
-    return float4(colour.rgb, 1.0);
+    colour.a = transparency;
+
+    return colour;
 }

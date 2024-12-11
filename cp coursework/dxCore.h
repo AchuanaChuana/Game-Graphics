@@ -84,6 +84,7 @@ void Init(int width , int height, HWND hwnd, bool window_fullscreen)
 	   devicecontext->RSSetViewports(1, &viewport);
 
 	   configRasterize();
+	   configBlendState();
 
 	}
 
@@ -95,6 +96,33 @@ void configRasterize()
 	rsdesc.CullMode = D3D11_CULL_NONE;
 	device->CreateRasterizerState(&rsdesc, &rasterizerState);
 	devicecontext->RSSetState(rasterizerState);
+}
+
+void configBlendState()
+{
+	// Define the blend state descriptor
+	D3D11_BLEND_DESC blendDesc = {};
+	blendDesc.RenderTarget[0].BlendEnable = TRUE;
+	blendDesc.RenderTarget[0].SrcBlend = D3D11_BLEND_SRC_ALPHA;
+	blendDesc.RenderTarget[0].DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
+	blendDesc.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
+	blendDesc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ONE;
+	blendDesc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ZERO;
+	blendDesc.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
+	blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+
+	// Create the blend state
+	ID3D11BlendState* blendState;
+	HRESULT hr = device->CreateBlendState(&blendDesc, &blendState);
+	
+
+	// Set the blend state in the output merger (OM) stage
+	float blendFactor[4] = { 0, 0, 0, 0 };
+	UINT sampleMask = 0xffffffff;
+	devicecontext->OMSetBlendState(blendState, blendFactor, sampleMask);
+
+	// Release the blend state (not needed anymore after being set)
+	blendState->Release();
 }
 
 void clear()
