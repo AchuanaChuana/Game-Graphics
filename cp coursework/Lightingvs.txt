@@ -1,0 +1,28 @@
+cbuffer VSConstants
+{
+    // 在本例中可能不需要任何VS常量缓冲，因为只是全屏绘制
+    // 如需可在此放置全屏quad的变换矩阵之类的（通常不需要）
+};
+
+struct VS_INPUT
+{
+    float3 Pos : POSITION;
+    float2 TexCoords : TEXCOORD;
+};
+
+struct PS_INPUT
+{
+    float4 Pos : SV_POSITION;   // 裁剪空间位置
+    float2 TexCoords : TEXCOORD; // 传递纹理坐标到PS
+};
+
+// 一个简单的全屏VS，只是传递数据，不做变换
+PS_INPUT VS(VS_INPUT input)
+{
+    PS_INPUT output;
+    // 将[-1,1]的屏幕空间直接传给SV_POSITION
+    // 通常无需额外变换，因为全屏quad顶点已经在NDC坐标范围
+    output.Pos = float4(input.Pos, 1.0f);
+    output.TexCoords = input.TexCoords;
+    return output;
+}

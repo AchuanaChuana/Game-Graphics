@@ -516,7 +516,6 @@ public:
 		{
 			Mesh geo;
 			std::vector<STATIC_VERTEX> vertices;
-			//AABB aabb;
 
 			for (int j = 0; j < gemmeshes[i].verticesStatic.size(); j++)
 			{
@@ -525,7 +524,6 @@ public:
 				vertices.push_back(v);
 
 				Vec3 pos(v.pos.x, v.pos.y, v.pos.z);
-				//aabb.expand(pos);
 			}
 
 			std::string diffuse = gemmeshes[i].material.find("diffuse").getValue();
@@ -538,7 +536,6 @@ public:
 
 			geo.init(core,vertices, gemmeshes[i].indices);
 			geoset.push_back(geo);
-			//aabbList.push_back(aabb);
 		}
 	}
 
@@ -549,8 +546,8 @@ public:
 		shader->apply(core);
 		for(int i = 0; i < geoset.size();i++)
 		{
-			shader->updateTexturePS(core, "tex", textures.find(textureFilenames[i]));
-			shader->updateTexturePS(core, "normalMap", textures.find(normalFilenames[i]));
+			textures.bindTextureToPS(core, textureFilenames[i], 0);
+			textures.bindTextureToPS(core, normalFilenames[i], 1);
 		    geoset[i].draw(core);
 		}
 	}
@@ -585,8 +582,8 @@ public:
 
 			for (int j = 0; j < geoset.size(); j++)
 			{
-				shader->updateTexturePS(core, "tex", textures.find(textureFilenames[j]));
-				shader->updateTexturePS(core, "normalMap", textures.find(normalFilenames[j]));
+				textures.bindTextureToPS(core, textureFilenames[j], 0);
+				textures.bindTextureToPS(core, normalFilenames[j], 1);
 				geoset[j].draw(core);
 			}
 		}
@@ -618,8 +615,8 @@ public:
 
 		for (int i = 0; i < geoset.size(); i++)
 		{
-			shader->updateTexturePS(core, "tex", textures.find(textureFilenames[i]));
-			shader->updateTexturePS(core, "normalMap", textures.find(normalFilenames[i]));
+			textures.bindTextureToPS(core, textureFilenames[i], 0);
+			textures.bindTextureToPS(core, normalFilenames[i], 1);
 			geoset[i].draw(core);
 		}
 	}
@@ -639,8 +636,8 @@ public:
 
 			for (int j = 0; j < geoset.size(); j++)
 			{
-				shader->updateTexturePS(core, "tex", textures.find(textureFilenames[j]));
-				shader->updateTexturePS(core, "normalMap", textures.find(normalFilenames[j]));
+				textures.bindTextureToPS(core, textureFilenames[j], 0);
+				textures.bindTextureToPS(core, normalFilenames[j], 1);
 				geoset[j].draw(core);
 			}
 		}
@@ -942,7 +939,7 @@ public:
 
 		for (int i = 0; i < geoset.size(); i++)
 		{
-			shaders->updateTexturePS(core, "tex", textures.find(textureFilenames[i]));
+			textures.bindTextureToPS(core, textureFilenames[i], 0);
 			geoset[i].draw(core);
 		}
 	}
@@ -1040,7 +1037,7 @@ public:
 		shader->updateConstantPS("ScrollParams", "transparency", &transparency);
 
 
-		shader->updateTexturePS(core, "tex", textures.find(filename));
+		textures.bindTextureToPS(core, filename, 0);
 		shader->apply(core);
 
 		mesh.draw(core);

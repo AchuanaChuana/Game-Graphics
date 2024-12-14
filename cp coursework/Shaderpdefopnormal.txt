@@ -1,0 +1,38 @@
+Texture2D tex : register(t0);      
+Texture2D normalMap : register(t1); 
+SamplerState samplerLinear : register(s0);
+
+struct PS_INPUT
+{
+    float4 Pos : SV_POSITION;
+    float3 Normal : NORMAL;
+    float3 Tangent : TANGENT;
+    float2 TexCoords : TEXCOORD;
+};
+
+struct PSOutput
+{
+    float4 RT0 : SV_Target0; // Albedo + other material properties
+    float4 RT1 : SV_Target1; // Normal (encoded)
+};
+
+PSOutput PS(PS_INPUT input)
+{
+    PSOutput output;
+
+    float4 albedo = tex.Sample(samplerLinear, input.TexCoords);
+
+    float3 bitangent = cross(input.Normal, input.Tangent);
+    float3x3 TBN = float3x3(normalize(input.Tangent), normalize(bitangent), normalize(input.Normal));
+
+    float3 normalTex = normalMap.Sample(samplerLinear, input.TexCoords).xyz;
+    normalTex = normalize(normalTex * 2.0f - 1.0f);
+
+    float3 worldNormal = normalize(mul(TBN, normalTex));
+
+    output.RT0 = albedo;
+
+    output.RT1 = float4(worldNormal * 0.5f + 0.5f, 1.0f);
+
+    return output;
+}

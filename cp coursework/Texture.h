@@ -25,7 +25,11 @@ public:
         samplerDesc.MinLOD = 0;
         samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
         core->device->CreateSamplerState(&samplerDesc, &state);
-        core->devicecontext->PSSetSamplers(0, 1, &state);
+    }
+
+    void bindToPS(DxCore* core, UINT slot = 0)
+    {
+        core->devicecontext->PSSetSamplers(slot, 1, &state);
     }
 
 };
@@ -101,6 +105,12 @@ class Texture
         load(core, filename);
     }
 
+    void bindToPS(DxCore* core, UINT slot = 0)
+    {
+        core->devicecontext->PSSetShaderResources(slot, 1, &srv);
+        sam.bindToPS(core, slot);
+    }
+
    /* void free()
     {
         srv->Release();
@@ -112,7 +122,6 @@ class textureManager
 {
 public:
     std::map<std::string, Texture*> textures;
-   // TilingBuffer tilingBuffer;
 
     void load(DxCore* core, std::string filename)
     {
@@ -138,12 +147,6 @@ public:
         textures.insert({ filename, texture });
     }
 
-    //    Texture* texture = new Texture();
-    //    texture->loadNormalMap(core, filename);
-   
-    //    textures.insert({ filename, texture });
-    //}
-
     ID3D11ShaderResourceView* find(std::string name)
     {
         if (textures.find(name) == textures.end() || !textures[name]->srv)
@@ -158,6 +161,17 @@ public:
     {
         name = "Resources/" + name;
         return textures[name]->srv;
+    }
+
+    void bindTextureToPS(DxCore* core, std::string name, UINT slot = 0)
+    {
+        auto it = textures.find(name);
+        if (it == textures.end() || !(it->second->srv))
+        {
+            return;
+        }
+
+        it->second->bindToPS(core, slot);
     }
 
   /* void unload(std::string name)
