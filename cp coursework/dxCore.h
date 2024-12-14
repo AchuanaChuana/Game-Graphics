@@ -1,6 +1,12 @@
 #pragma once
 #include "adaptor.h"
 #include "memory.h"
+#include "mathLibrary.h"
+
+struct InstanceData
+{
+	Vec3 position;
+};
 
 class DxCore
 {

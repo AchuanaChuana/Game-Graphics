@@ -47,11 +47,18 @@ struct AnimationFrame
 	std::vector<Vec3> scales;
 };
 
+struct INSTANCE_DATA
+{
+	Matrix44 position;
+};
+
 class Mesh
 {
 public:
 	ID3D11Buffer* indexBuffer;
 	ID3D11Buffer* vertexBuffer;
+	ID3D11Buffer* instanceBuffer;
+
 	int indicesSize;
 	UINT strides;
 
@@ -66,6 +73,7 @@ public:
 		memset(&data, 0, sizeof(D3D11_SUBRESOURCE_DATA));
 		data.pSysMem = indices;
 		core->device->CreateBuffer(&bd, &data, &indexBuffer);
+
 		bd.ByteWidth = vertexSizeInBytes * numVertices;
 		bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
 		data.pSysMem = vertices;
@@ -91,6 +99,33 @@ public:
 		core->devicecontext->IASetVertexBuffers(0, 1, &vertexBuffer, &strides, &offsets);
 		core->devicecontext->IASetIndexBuffer(indexBuffer, DXGI_FORMAT_R32_UINT, 0);
 		core->devicecontext->DrawIndexed(indicesSize, 0, 0);
+	}
+
+	void drawInstance(DxCore* core, int instanceCount)
+	{
+		if (!instanceBuffer)
+		{
+			std::cerr << "Instance buffer not initialized!" << std::endl;
+			return;
+		}
+
+		unsigned int strides[2];
+		strides[0] = sizeof(STATIC_VERTEX);
+		strides[1] = sizeof(INSTANCE_DATA);
+
+		unsigned int offsets[2] = { 0, 0 };
+
+		ID3D11Buffer* buffers[2];
+		buffers[0] = vertexBuffer;
+		buffers[1] = instanceBuffer;
+
+		core->devicecontext->IASetVertexBuffers(0, 2, buffers, strides, offsets);
+
+		core->devicecontext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+		core->devicecontext->IASetIndexBuffer(indexBuffer, DXGI_FORMAT_R32_UINT, 0);
+
+		core->devicecontext->DrawIndexedInstanced(indicesSize, instanceCount, 0, 0, 0);
 	}
 
 };
@@ -506,6 +541,7 @@ public:
 	std::vector<Mesh> geoset;
 	std::vector<std::string> textureFilenames;
 	std::vector<std::string> normalFilenames;
+	ID3D11Buffer* instanceBuffer = nullptr;
 
 	void loadMesh(DxCore* core, std::string filename,  textureManager* textures)
 	{
@@ -539,6 +575,23 @@ public:
 		}
 	}
 
+	void updateInstanceBuffer(DxCore* core, const std::vector<Matrix44>& Wpositions)
+	{
+		if (instanceBuffer) instanceBuffer->Release();
+
+		D3D11_BUFFER_DESC bufferDesc = {};
+		bufferDesc.Usage = D3D11_USAGE_DYNAMIC;
+		bufferDesc.ByteWidth = sizeof(Matrix44) * Wpositions.size();
+		bufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+		bufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+
+		D3D11_SUBRESOURCE_DATA initData = {};
+		initData.pSysMem = Wpositions.data();
+
+		HRESULT hr = core->device->CreateBuffer(&bufferDesc, &initData, &instanceBuffer);
+
+	}
+
 	void draw(DxCore* core,Shaders*shader, textureManager textures , Matrix44 Worldpos, Matrix44 Transform)
 	{
 		shader->updateConstantVS("staticMeshBuffer", "W", &Worldpos);
@@ -552,7 +605,7 @@ public:
 		}
 	}
 
-	std::vector<Matrix44> generateRandomPositions(int instanceCount, float rangeX, float rangeY, float rangeZ,Vec3 scale)
+	std::vector<Matrix44> generateRandomPositionsW(int instanceCount, float rangeX, float rangeY, float rangeZ,Vec3 scale)
 	{
 		std::vector<Matrix44> positions;
 
@@ -586,6 +639,27 @@ public:
 				textures.bindTextureToPS(core, normalFilenames[j], 1);
 				geoset[j].draw(core);
 			}
+		}
+	}
+
+	void drawManyInstance(DxCore* core, Shaders* shader, textureManager& textures, Matrix44 Transform, int instanceCount)
+	{
+		shader->updateConstantVS("staticMeshBuffer", "VP", &Transform);
+
+		for (int i = 0; i < geoset.size(); i++)
+		{
+			textures.bindTextureToPS(core, textureFilenames[i], 0);
+			textures.bindTextureToPS(core, normalFilenames[i], 1);
+
+			// Bind instance buffer
+			unsigned int strides[2] = { sizeof(STATIC_VERTEX), sizeof(Matrix44) };
+			unsigned int offsets[2] = { 0, 0 };
+			ID3D11Buffer* buffers[2] = { geoset[i].vertexBuffer, instanceBuffer };
+
+			core->devicecontext->IASetVertexBuffers(0, 2, buffers, strides, offsets);
+			core->devicecontext->IASetIndexBuffer(geoset[i].indexBuffer, DXGI_FORMAT_R32_UINT, 0);
+
+			core->devicecontext->DrawIndexedInstanced(geoset[i].indicesSize, instanceCount, 0, 0, 0);
 		}
 	}
 };
@@ -641,6 +715,18 @@ public:
 				geoset[j].draw(core);
 			}
 		}
+	}
+
+	void drawManyRandInstanceb(DxCore* core, Shaders* shader, textureManager& textures, Matrix44 Transform, const std::vector<Matrix44>& Wpositions)
+	{
+		shader->updateConstantVS("WaveParams", "time", &time);
+		shader->updateConstantVS("WaveParams", "maxHeight", &maxHeight);
+		shader->updateConstantVS("WaveParams", "intensity", &intensity);
+		shader->updateConstantVS("WaveParams", "frequency", &frequency);
+
+		updateInstanceBuffer(core, Wpositions);
+
+		drawManyInstance(core, shader, textures, Transform, Wpositions.size());
 	}
 };
 

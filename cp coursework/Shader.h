@@ -47,6 +47,17 @@ public:
 		loadPS(core, psShader);
 	}
 
+	void initStaticins(std::string vs, std::string ps, DxCore* core)
+	{
+		std::string vsShader = readFile(vs);
+		std::string psShader = readFile(ps);
+
+		initConstBuffer(sizeof(ConstantBuffer) + (16 - sizeof(ConstantBuffer) % 16), core);
+		// Compile & create vertex shader and pixel shader
+		loadVSStaticins(core, vsShader);
+		loadPS(core, psShader);
+	}
+
 	void initAnimated(std::string vs, std::string ps, DxCore* core)
 	{
 		// Read the vertex shader and pixel shader .txt files
@@ -105,6 +116,38 @@ public:
 			{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 		};
 		core->device->CreateInputLayout(layoutDesc, 4, compiledVertexShader->GetBufferPointer(), compiledVertexShader->GetBufferSize(), &layout);
+
+		ConstantBufferReflection reflection;
+		reflection.build(core, compiledVertexShader, vsConstantBuffers, textureBindPointsVS, ShaderStage::VertexShader);
+		compiledVertexShader->Release();
+	}
+
+	void loadVSStaticins(DxCore* core, std::string vertexShaderHLSL)
+	{
+		ID3DBlob* compiledVertexShader;
+		ID3DBlob* status;
+		HRESULT hr = D3DCompile(vertexShaderHLSL.c_str(), vertexShaderHLSL.length(), NULL, NULL, NULL, "VS", "vs_5_0", 0, 0, &compiledVertexShader, &status);
+
+		if (FAILED(hr))
+		{
+			MessageBoxA(NULL, (char*)status->GetBufferPointer(), "Vertex Shader Error", 0);
+			exit(0);
+		}
+		core->device->CreateVertexShader(compiledVertexShader->GetBufferPointer(), compiledVertexShader->GetBufferSize(), NULL, &vertexShader);
+
+		D3D11_INPUT_ELEMENT_DESC layoutDesc[] =
+		{
+			{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+			{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+			{ "TANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+			{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+			 { "WORLD", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 0, D3D11_INPUT_PER_INSTANCE_DATA, 1 },
+            	{ "WORLD", 1, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 16, D3D11_INPUT_PER_INSTANCE_DATA, 1 },
+            	{ "WORLD", 2, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 32, D3D11_INPUT_PER_INSTANCE_DATA, 1 },
+	            { "WORLD", 3, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 48, D3D11_INPUT_PER_INSTANCE_DATA, 1 },
+		};
+
+		core->device->CreateInputLayout(layoutDesc, 8, compiledVertexShader->GetBufferPointer(), compiledVertexShader->GetBufferSize(), &layout);
 
 		ConstantBufferReflection reflection;
 		reflection.build(core, compiledVertexShader, vsConstantBuffers, textureBindPointsVS, ShaderStage::VertexShader);

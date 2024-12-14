@@ -22,6 +22,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 	Shaders shaderwater;
 	Shaders shadertile;
 	Shaders shaderswing;
+	Shaders shaderswingins;
 	//Shaders shaderdefswing;         
 
 	//LightingPass lighting;
@@ -41,7 +42,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 	FPCamera camera;
 	Checkkey check;
 	textureManager texman;
-	textureManager texmandef;
+	//textureManager texmandef;
 	Matrix44 defaultMatrix;
 	Matrix44 biggerDefault = defaultMatrix.scaling(Vec3(100, 100, 100));
 	Checkmouse checkMouse(win.hwnd);
@@ -61,6 +62,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 	shaderwater.initStatic("Shadervwater.txt", "Shaderpwater.txt", &dx);
 	shadertile.initStatic("Shaderv.txt", "Shaderptile.txt", &dx);
 	shaderswing.initStatic("ShadervSwing.txt", "Shaderpopnormal.txt", &dx);
+	shaderswingins.initStaticins("ShadervSwingins.txt", "Shaderpopnormal.txt", &dx);
 	//shaderdefswing.initDeferred("ShadervSwing.txt", "Shaderpdefopnormal.txt", &dxdef);          (read the vertex and pixel shader)
 
 	//lighting.initLighting(&dxdef, "Lightingvs.txt", "Lightingps.txt");                 (Initialize lightingpass)
@@ -89,15 +91,15 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 	camera.setViewMatrix(eye, center, up);
 	camera.setProjectionMatrix(45, 1024.f / 768.f, 0.1, 50000);
 
-	vector<Matrix44> bambooPos = bamboo.generateRandomPositions(30, 3000, 1, 3000, Vec3(3,3,3));
-	vector<Matrix44> flowerPos = flower.generateRandomPositions(100, 3000, 1, 3000, Vec3(1, 1, 1));
-	vector<Matrix44> bamboooPos = bambooo.generateRandomPositions(30, 3000, 1, 3000, Vec3(3, 3, 3));
+	vector<Matrix44> bambooPos = bamboo.generateRandomPositionsW(1000, 3000, 1, 3000, Vec3(3,3,3));
+	vector<Matrix44> flowerPos = flower.generateRandomPositionsW(100, 3000, 1, 3000, Vec3(1, 1, 1));
+	vector<Matrix44> bamboooPos = bambooo.generateRandomPositionsW(30, 3000, 1, 3000, Vec3(3, 3, 3));
+	bambooo.updateInstanceBuffer(&dx, bamboooPos);
 
 	//Vec3 LightDirection = Vec3(0.0f, -1.0f, 0.0f);
 	//float LightIntensity = 1.0f;
 	//Vec3 LightColor = Vec3(1.0f, 1.0f, 1.0f);
 	//float padding = 0.0f;                                        (data for LightingPass Cbuffer)
-
 
 	while (true)
 	{
@@ -130,9 +132,10 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 		lighting.lightingShaders.updateLightingPS("LightingParams", "LightColor", &LightColor.x);*/
 	
 		plane.draw(&dx, &shadertile,texman,20.f, "Textures/snowbc.png", defaultMatrix, together);
-		bambooo.drawb(&dx, &shaderswing, texman, defaultMatrix, together);
+		//bambooo.drawb(&dx, &shaderswing, texman, defaultMatrix, together);
 		//bambooo.drawb(&dxdef, &shaderdefswing, texmandef, defaultMatrix, together);                               (Draw bamboo with deffered shading)
 		bambooo.drawManyRandb(&dx, &shaderswing, texman, together, bamboooPos);
+		bambooo.drawManyRandInstanceb(&dx, &shaderswingins, texman, together, bamboooPos);
 		flower.drawManyRand(&dx, &shaderopnor, texman, together, flowerPos);
 		dina.draw(&shaderA, &dx, dt, texman, together);
 		box.draw(&dx, &shaderS, texman, "Textures/wood.png", defaultMatrix.translation(Vec3(0, 0, 1000)), together);
