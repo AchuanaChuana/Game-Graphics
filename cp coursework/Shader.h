@@ -77,7 +77,6 @@ public:
 
 		initConstBuffer(sizeof(ConstantBuffer) + (16 - sizeof(ConstantBuffer) % 16), core);
 
-		// 加载专门写入G-Buffer的VS和PS
 		loadVSStatic(core, vsShader);
 		loadPS(core, psShader);
 	}
@@ -141,13 +140,11 @@ public:
 			{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 			{ "TANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 			{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-			 { "WORLD", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 0, D3D11_INPUT_PER_INSTANCE_DATA, 1 },
-            	{ "WORLD", 1, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 16, D3D11_INPUT_PER_INSTANCE_DATA, 1 },
-            	{ "WORLD", 2, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 32, D3D11_INPUT_PER_INSTANCE_DATA, 1 },
-	            { "WORLD", 3, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 48, D3D11_INPUT_PER_INSTANCE_DATA, 1 },
+			 { "INSTANCE_POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 1, 0,  D3D11_INPUT_PER_INSTANCE_DATA, 1 },
+	          { "INSTANCE_PADDING", 0, DXGI_FORMAT_R32_FLOAT,        1, 12, D3D11_INPUT_PER_INSTANCE_DATA, 1 },
 		};
-
-		core->device->CreateInputLayout(layoutDesc, 8, compiledVertexShader->GetBufferPointer(), compiledVertexShader->GetBufferSize(), &layout);
+		UINT numElements = ARRAYSIZE(layoutDesc);
+		core->device->CreateInputLayout(layoutDesc,numElements,compiledVertexShader->GetBufferPointer(), compiledVertexShader->GetBufferSize(), &layout);
 
 		ConstantBufferReflection reflection;
 		reflection.build(core, compiledVertexShader, vsConstantBuffers, textureBindPointsVS, ShaderStage::VertexShader);

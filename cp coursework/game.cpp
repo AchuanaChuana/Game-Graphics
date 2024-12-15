@@ -10,7 +10,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 {
 	Window win;
 	DxCore dx;
-	DxCore dxdef;
+	//DxCore dxdef;
 
 	Shaders shaderS;
 	Shaders shaderA;
@@ -23,6 +23,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 	Shaders shadertile;
 	Shaders shaderswing;
 	Shaders shaderswingins;
+	Shaders shadergrassins;
 	//Shaders shaderdefswing;         
 
 	//LightingPass lighting;
@@ -31,6 +32,8 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 	planewithTex pondground;
 	staticMesh bamboo;
 	DrawBamboo bambooo;
+	DrawGrass grass;
+	DrawGrass grassb;
 	staticMesh flower;
 	Box box;
 	Box box2;
@@ -62,7 +65,9 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 	shaderwater.initStatic("Shadervwater.txt", "Shaderpwater.txt", &dx);
 	shadertile.initStatic("Shaderv.txt", "Shaderptile.txt", &dx);
 	shaderswing.initStatic("ShadervSwing.txt", "Shaderpopnormal.txt", &dx);
+	shadergrassins.initStaticins("ShadervSwingins2.txt", "Shaderpopnormal2.txt", &dx);
 	shaderswingins.initStaticins("ShadervSwingins.txt", "Shaderpopnormal.txt", &dx);
+	
 	//shaderdefswing.initDeferred("ShadervSwing.txt", "Shaderpdefopnormal.txt", &dxdef);          (read the vertex and pixel shader)
 
 	//lighting.initLighting(&dxdef, "Lightingvs.txt", "Lightingps.txt");                 (Initialize lightingpass)
@@ -71,13 +76,15 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 	pondground.init(&dx, &texman, std::string("Textures/pondbc.png"),2000.f);
 	flower.loadMesh(&dx, "Resources/flower1.gem", &texman);
 	bamboo.loadMesh(&dx, "Resources/bamboo.gem",&texman);
+	grass.initGrass(&dx, &texman, "Textures/grassplane.png", "Textures/PDW_Normal.png");
+	grassb.initGrass(&dx, &texman, "Textures/grassplane.png", "Textures/PDW_Normal.png");
 	bambooo.loadMesh(&dx, "Resources/bamboo.gem", &texman);
 	//bambooo.loadMesh(&dxdef, "Resources/bamboo.gem", &texmandef);       (Load Bambooo with the deffered shading mode)
 	dina.loadMesh(&dx, "Resources/TRex.gem", &texman);
 	dome.init(&dx, &texman, std::string("Textures/HDRI/cloudyblue.png"), 30, 30, 30000);
 	box.init(&dx, &texman, std::string("Textures/wood.png"), 2030.f, 120.f, 30.f);
 	box2.init(&dx, &texman, std::string("Textures/wood.png"), 30.f, 120.f, 2030.f);
-	snow.init(&dx, &texman, 4, 4, 20, 200);
+	snow.init(&dx, &texman, 4, 4, 20, 300);
 	water.init(&dx, &texman, std::string("Textures/water.png"),80);
 
 	float t = 0.f;
@@ -91,10 +98,12 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 	camera.setViewMatrix(eye, center, up);
 	camera.setProjectionMatrix(45, 1024.f / 768.f, 0.1, 50000);
 
-	vector<Matrix44> bambooPos = bamboo.generateRandomPositionsW(1000, 3000, 1, 3000, Vec3(3,3,3));
 	vector<Matrix44> flowerPos = flower.generateRandomPositionsW(100, 3000, 1, 3000, Vec3(1, 1, 1));
 	vector<Matrix44> bamboooPos = bambooo.generateRandomPositionsW(30, 3000, 1, 3000, Vec3(3, 3, 3));
-	bambooo.updateInstanceBuffer(&dx, bamboooPos);
+
+	std::vector<INSTANCE_DATA> bamboooInstances = bambooo.generateRandomInstances(100, 1500.0f, 1.0f, 1500.0f, Vec3(3.0f, 3.0f, 3.0f));
+	std::vector<INSTANCE_DATA> grassInstances = grass.generateRandomGrassInstances(4000, 1000.0f, 5.0f,1000.0f);
+	std::vector<INSTANCE_DATA> grassInstances2 = grass.generateRandomGrassInstances(300, 5000.0f, 1.0f, 5000.0f);
 
 	//Vec3 LightDirection = Vec3(0.0f, -1.0f, 0.0f);
 	//float LightIntensity = 1.0f;
@@ -125,7 +134,11 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 	
 		snow.update(dt);
 		water.update(dt);
+		grass.update(dt);
+		grassb.update(dt); 
 		bambooo.update(dt);
+		
+
 
 		/*lighting.lightingShaders.updateLightingPS("LightingParams", "LightDirection", &LightDirection.x);               (Upload data to cBuffer)
 		lighting.lightingShaders.updateLightingPS("LightingParams", "LightIntensity", &LightIntensity);
@@ -134,8 +147,10 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 		plane.draw(&dx, &shadertile,texman,20.f, "Textures/snowbc.png", defaultMatrix, together);
 		//bambooo.drawb(&dx, &shaderswing, texman, defaultMatrix, together);
 		//bambooo.drawb(&dxdef, &shaderdefswing, texmandef, defaultMatrix, together);                               (Draw bamboo with deffered shading)
-		bambooo.drawManyRandb(&dx, &shaderswing, texman, together, bamboooPos);
-		bambooo.drawManyRandInstanceb(&dx, &shaderswingins, texman, together, bamboooPos);
+		//bambooo.drawManyRandb(&dx, &shaderswing, texman, together, bamboooPos);
+		grass.drawGrass(&dx, &shadergrassins, texman, defaultMatrix.translation(Vec3(0, -15, 0)), together, grassInstances);
+		grassb.drawGrass(&dx, &shadergrassins, texman, defaultMatrix.translation(Vec3(0, 0, 0)), together, grassInstances2);
+		bambooo.drawManyRandInstanceb(&dx, &shaderswingins, texman, defaultMatrix.scaling(Vec3(3, 3, 3)), together, bamboooInstances);
 		flower.drawManyRand(&dx, &shaderopnor, texman, together, flowerPos);
 		dina.draw(&shaderA, &dx, dt, texman, together);
 		box.draw(&dx, &shaderS, texman, "Textures/wood.png", defaultMatrix.translation(Vec3(0, 0, 1000)), together);

@@ -49,7 +49,8 @@ struct AnimationFrame
 
 struct INSTANCE_DATA
 {
-	Matrix44 position;
+	Vec3 position;   
+	float padding;    
 };
 
 class Mesh
@@ -57,7 +58,6 @@ class Mesh
 public:
 	ID3D11Buffer* indexBuffer;
 	ID3D11Buffer* vertexBuffer;
-	ID3D11Buffer* instanceBuffer;
 
 	int indicesSize;
 	UINT strides;
@@ -101,7 +101,7 @@ public:
 		core->devicecontext->DrawIndexed(indicesSize, 0, 0);
 	}
 
-	void drawInstance(DxCore* core, int instanceCount)
+	void drawInstance(DxCore* core, ID3D11Buffer* instanceBuffer, int instanceCount)
 	{
 		if (!instanceBuffer)
 		{
@@ -109,22 +109,13 @@ public:
 			return;
 		}
 
-		unsigned int strides[2];
-		strides[0] = sizeof(STATIC_VERTEX);
-		strides[1] = sizeof(INSTANCE_DATA);
-
-		unsigned int offsets[2] = { 0, 0 };
-
-		ID3D11Buffer* buffers[2];
-		buffers[0] = vertexBuffer;
-		buffers[1] = instanceBuffer;
+		UINT strides[2] = { sizeof(STATIC_VERTEX), sizeof(INSTANCE_DATA) };
+		UINT offsets[2] = { 0, 0 };
+		ID3D11Buffer* buffers[2] = { vertexBuffer, instanceBuffer };
 
 		core->devicecontext->IASetVertexBuffers(0, 2, buffers, strides, offsets);
-
 		core->devicecontext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-
 		core->devicecontext->IASetIndexBuffer(indexBuffer, DXGI_FORMAT_R32_UINT, 0);
-
 		core->devicecontext->DrawIndexedInstanced(indicesSize, instanceCount, 0, 0, 0);
 	}
 
@@ -541,7 +532,8 @@ public:
 	std::vector<Mesh> geoset;
 	std::vector<std::string> textureFilenames;
 	std::vector<std::string> normalFilenames;
-	ID3D11Buffer* instanceBuffer = nullptr;
+	ID3D11Buffer* instanceBufferB = nullptr;
+	ID3D11Buffer* instanceBufferG = nullptr;
 
 	void loadMesh(DxCore* core, std::string filename,  textureManager* textures)
 	{
@@ -575,21 +567,54 @@ public:
 		}
 	}
 
-	void updateInstanceBuffer(DxCore* core, const std::vector<Matrix44>& Wpositions)
+	void updateInstanceBufferB(DxCore* core, const std::vector<INSTANCE_DATA>& instances)
 	{
-		if (instanceBuffer) instanceBuffer->Release();
+		if (instanceBufferB)
+		{
+			instanceBufferB->Release();
+			instanceBufferB = nullptr;
+		}
 
 		D3D11_BUFFER_DESC bufferDesc = {};
-		bufferDesc.Usage = D3D11_USAGE_DYNAMIC;
-		bufferDesc.ByteWidth = sizeof(Matrix44) * Wpositions.size();
+		bufferDesc.Usage = D3D11_USAGE_DEFAULT;
+		bufferDesc.ByteWidth = sizeof(INSTANCE_DATA) * instances.size();
 		bufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-		bufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+		bufferDesc.CPUAccessFlags = 0;
 
 		D3D11_SUBRESOURCE_DATA initData = {};
-		initData.pSysMem = Wpositions.data();
+		initData.pSysMem = instances.data();
 
-		HRESULT hr = core->device->CreateBuffer(&bufferDesc, &initData, &instanceBuffer);
+		HRESULT hr = core->device->CreateBuffer(&bufferDesc, &initData, &instanceBufferB);
+		if (FAILED(hr))
+		{
+			std::cerr << "Failed to create instance buffer." << std::endl;
+			return;
+		}
+	}
 
+	void updateInstanceBufferG(DxCore* core, const std::vector<INSTANCE_DATA>& instances)
+	{
+		if (instanceBufferG)
+		{
+			instanceBufferG->Release();
+			instanceBufferG = nullptr;
+		}
+
+		D3D11_BUFFER_DESC bufferDesc = {};
+		bufferDesc.Usage = D3D11_USAGE_DEFAULT;
+		bufferDesc.ByteWidth = sizeof(INSTANCE_DATA) * instances.size();
+		bufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+		bufferDesc.CPUAccessFlags = 0;
+
+		D3D11_SUBRESOURCE_DATA initData = {};
+		initData.pSysMem = instances.data();
+
+		HRESULT hr = core->device->CreateBuffer(&bufferDesc, &initData, &instanceBufferG);
+		if (FAILED(hr))
+		{
+			std::cerr << "Failed to create instance buffer." << std::endl;
+			return;
+		}
 	}
 
 	void draw(DxCore* core,Shaders*shader, textureManager textures , Matrix44 Worldpos, Matrix44 Transform)
@@ -642,26 +667,37 @@ public:
 		}
 	}
 
-	void drawManyInstance(DxCore* core, Shaders* shader, textureManager& textures, Matrix44 Transform, int instanceCount)
+	void drawManyInstance(DxCore* core, Shaders* shader, textureManager& textures, Matrix44 Transform, ID3D11Buffer* buffername,int instanceCount)
 	{
-		shader->updateConstantVS("staticMeshBuffer", "VP", &Transform);
 
 		for (int i = 0; i < geoset.size(); i++)
 		{
 			textures.bindTextureToPS(core, textureFilenames[i], 0);
 			textures.bindTextureToPS(core, normalFilenames[i], 1);
 
-			// Bind instance buffer
-			unsigned int strides[2] = { sizeof(STATIC_VERTEX), sizeof(Matrix44) };
-			unsigned int offsets[2] = { 0, 0 };
-			ID3D11Buffer* buffers[2] = { geoset[i].vertexBuffer, instanceBuffer };
-
-			core->devicecontext->IASetVertexBuffers(0, 2, buffers, strides, offsets);
-			core->devicecontext->IASetIndexBuffer(geoset[i].indexBuffer, DXGI_FORMAT_R32_UINT, 0);
-
-			core->devicecontext->DrawIndexedInstanced(geoset[i].indicesSize, instanceCount, 0, 0, 0);
+			geoset[i].drawInstance(core, buffername, instanceCount);
 		}
 	}
+
+
+	std::vector<INSTANCE_DATA> generateRandomPositions(int instanceCount, float rangeX, float rangeY, float rangeZ, Vec3 scale)
+	{
+		std::vector<INSTANCE_DATA> instances;
+
+		for (int i = 0; i < instanceCount; i++)
+		{
+			INSTANCE_DATA instance;
+			instance.position.x = static_cast<float>((rand() % static_cast<int>(rangeX * 2)) - rangeX);
+			instance.position.y = static_cast<float>((rand() % static_cast<int>(rangeY * 2)) - rangeY);
+			instance.position.z = static_cast<float>((rand() % static_cast<int>(rangeZ * 2)) - rangeZ);
+			instance.padding = 0.0f; 
+
+			instances.push_back(instance);
+		}
+
+		return instances;
+	}
+
 };
 
 class DrawBamboo : public staticMesh
@@ -669,7 +705,7 @@ class DrawBamboo : public staticMesh
 public:
 	float time = 0.0f;
 	float maxHeight = 180.0f;      
-	float intensity = 0.004f;   
+	float intensity = 0.01f;   
 	float frequency = 1.3f;     
 
 	void update(float deltaTime)
@@ -695,6 +731,24 @@ public:
 		}
 	}
 
+	std::vector<INSTANCE_DATA> generateRandomInstances(int instanceCount, float rangeX, float rangeY, float rangeZ, Vec3 scale)
+	{
+		std::vector<INSTANCE_DATA> instances;
+
+		for (int i = 0; i < instanceCount; i++)
+		{
+			INSTANCE_DATA instance;
+			instance.position.x = static_cast<float>((rand() % static_cast<int>(rangeX * 2)) - rangeX);
+			instance.position.y = static_cast<float>((rand() % static_cast<int>(rangeY * 2)) - rangeY);
+			instance.position.z = static_cast<float>((rand() % static_cast<int>(rangeZ * 2)) - rangeZ);
+			instance.padding = 0.0f; 
+
+			instances.push_back(instance);
+		}
+
+		return instances;
+	}
+
 	void drawManyRandb(DxCore* core, Shaders* shader, textureManager& textures, Matrix44 Transform, const std::vector<Matrix44>& Wpositions)
 	{
 		shader->updateConstantVS("WaveParams", "time", &time);
@@ -717,16 +771,122 @@ public:
 		}
 	}
 
-	void drawManyRandInstanceb(DxCore* core, Shaders* shader, textureManager& textures, Matrix44 Transform, const std::vector<Matrix44>& Wpositions)
+	void drawManyRandInstanceb(DxCore* core, Shaders* shader, textureManager& textures, Matrix44 Worldpos, Matrix44 Transform, const std::vector<INSTANCE_DATA>& instances)
 	{
 		shader->updateConstantVS("WaveParams", "time", &time);
 		shader->updateConstantVS("WaveParams", "maxHeight", &maxHeight);
 		shader->updateConstantVS("WaveParams", "intensity", &intensity);
 		shader->updateConstantVS("WaveParams", "frequency", &frequency);
 
-		updateInstanceBuffer(core, Wpositions);
+		shader->updateConstantVS("staticMeshBuffer", "W", &Worldpos);
+		shader->updateConstantVS("staticMeshBuffer", "VP", &Transform);
 
-		drawManyInstance(core, shader, textures, Transform, Wpositions.size());
+		updateInstanceBufferB(core, instances);
+
+		shader->apply(core);
+
+		drawManyInstance(core, shader, textures, Transform,instanceBufferB,instances.size());
+	}
+};
+
+class DrawGrass : public staticMesh
+{
+public:
+	float time = 0.0f;
+	float maxHeight = 5.0f;      
+	float intensity = 0.4f;   
+	float frequency = 0.5f;      
+
+	void update(float deltaTime)
+	{
+		time += deltaTime;
+	}
+
+	void initGrass(DxCore* core, textureManager* textures, const std::string& diffuseTexturePath, const std::string& normalTexturePath)
+	{
+		std::vector<STATIC_VERTEX> vertices;
+		std::vector<unsigned int> indices;
+
+		float grassHeight = 50.0f; 
+		float grassWidth = 40.0f;  
+
+		for (int i = 0; i < 3; i++)
+		{
+			float angle = i * (PI / 3); 
+			Vec3 offset(cos(angle) * grassWidth, 0, sin(angle) * grassWidth);
+
+			vertices.push_back(addVertex(-offset, Vec3(0, 1, 0), 0.0f, 0.0f));
+			vertices.push_back(addVertex(offset, Vec3(0, 1, 0), 1.0f, 0.0f));
+			vertices.push_back(addVertex(-offset + Vec3(0, grassHeight, 0), Vec3(0, 1, 0), 0.0f, 1.0f));
+			vertices.push_back(addVertex(offset + Vec3(0, grassHeight, 0), Vec3(0, 1, 0), 1.0f, 1.0f));
+
+			int baseIndex = i * 4;
+			indices.push_back(baseIndex + 0);
+			indices.push_back(baseIndex + 1);
+			indices.push_back(baseIndex + 2);
+			indices.push_back(baseIndex + 1);
+			indices.push_back(baseIndex + 3);
+			indices.push_back(baseIndex + 2);
+		}
+
+		Mesh grassMesh;
+		grassMesh.init(core, vertices, indices);
+		geoset.push_back(grassMesh);
+
+		textures->load(core, diffuseTexturePath);
+		textureFilenames.push_back(diffuseTexturePath);
+
+		textures->load(core, normalTexturePath);
+		normalFilenames.push_back(normalTexturePath);
+	}
+
+	std::vector<INSTANCE_DATA> generateRandomGrassInstances(int instanceCount, float rangeX, float rangeY, float rangeZ)
+	{
+		std::vector<INSTANCE_DATA> instances;
+
+		for (int i = 0; i < instanceCount; i++)
+		{
+			INSTANCE_DATA instance;
+			instance.position.x = static_cast<float>((rand() % static_cast<int>(rangeX * 2)) - rangeX);
+			instance.position.y = static_cast<float>((rand() % static_cast<int>(rangeY * 2)) - rangeY);
+			instance.position.z = static_cast<float>((rand() % static_cast<int>(rangeZ * 2)) - rangeZ);
+			instance.padding = 0.0f; 
+
+			instances.push_back(instance);
+		}
+
+		return instances;
+	}
+
+
+	void drawGrass(DxCore* core, Shaders* shader, textureManager& textures,Matrix44 Worldpos, Matrix44 Transform, const std::vector<INSTANCE_DATA>& instances)
+	{
+		shader->updateConstantVS("WaveParamsG", "time", &time);
+		shader->updateConstantVS("WaveParamsG", "maxHeight", &maxHeight);
+		shader->updateConstantVS("WaveParamsG", "intensity", &intensity);
+		shader->updateConstantVS("WaveParamsG", "frequency", &frequency);
+
+		shader->updateConstantVS("staticMeshBuffer", "W", &Worldpos);
+		shader->updateConstantVS("staticMeshBuffer", "VP", &Transform);
+
+		updateInstanceBufferG(core, instances);
+
+		shader->apply(core);
+
+		drawManyInstance(core, shader, textures, Transform,instanceBufferG,instances.size());
+	}
+
+private:
+
+	STATIC_VERTEX addVertex(Vec3 p, Vec3 n, float tu, float tv)
+	{
+		STATIC_VERTEX v;
+		v.pos = p;
+		v.normal = n;
+		v.tangent = Vec3(0, 0, 0);
+		v.tu = tu;
+		v.tv = tv;
+		return v;
 	}
 };
 
